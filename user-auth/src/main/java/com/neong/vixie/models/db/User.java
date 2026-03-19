@@ -4,11 +4,14 @@ import com.neong.vixie.helpers.api.AuditableEntity;
 import com.neong.vixie.models.constant.AuthProvider;
 import com.neong.vixie.models.constant.Role;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.util.Collection;
 import java.util.List;
@@ -40,17 +43,8 @@ public class User extends AuditableEntity implements UserDetails {
     @Column(name = "password_hash", length = 255)
     private String password;
 
-    @Column(name = "username", length = 255, unique = true)
-    private String appUsername;
-
-    @Column(name = "first_name", length = 100)
-    private String firstName;
-
-    @Column(name = "last_name", length = 100)
-    private String lastName;
-
-    @Column(name = "country_of_origin", length = 10)
-    private String countryOfOrigin;
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private UserProfile profile;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 50)

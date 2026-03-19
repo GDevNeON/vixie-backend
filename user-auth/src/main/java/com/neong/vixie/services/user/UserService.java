@@ -4,6 +4,8 @@ import com.neong.vixie.helpers.api.IdGenerator;
 import com.neong.vixie.models.constant.AuthProvider;
 import com.neong.vixie.models.constant.Role;
 import com.neong.vixie.models.db.User;
+import com.neong.vixie.models.db.UserProfile;
+import com.neong.vixie.repositories.user.UserProfileRepository;
 import com.neong.vixie.repositories.user.UserRepository;
 
 import jakarta.transaction.Transactional;
@@ -16,10 +18,15 @@ import org.springframework.stereotype.Service;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, @Lazy PasswordEncoder passwordEncoder) {
+    public UserService(
+            UserRepository userRepository,
+            UserProfileRepository userProfileRepository,
+            @Lazy PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.userProfileRepository = userProfileRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -28,51 +35,84 @@ public class UserService {
     }
 
     @Transactional
-    public User registerLocalUser(String email, String rawPassword, String username, String firstName, String lastName, String countryOfOrigin) {
+    public User registerLocalUser(String email, String rawPassword, String username,
+                                  String firstName, String lastName, String countryOfOrigin) {
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Email is already in use");
         }
-        if (username != null && !username.isBlank() && userRepository.existsByAppUsername(username)) {
+        if (username != null && !username.isBlank()
+                && userProfileRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("Username is already in use");
         }
-        String id = IdGenerator.generateId("users");
+
+        String userId = IdGenerator.generateId("users");
         User user = User.builder()
-                .id(id)
+                .id(userId)
                 .email(email)
                 .password(passwordEncoder.encode(rawPassword))
-                .appUsername(username != null && !username.isBlank() ? username : email)
-                .firstName(firstName)
-                .lastName(lastName)
-                .countryOfOrigin(countryOfOrigin)
                 .role(Role.ROLE_USER)
                 .authProvider(AuthProvider.LOCAL)
                 .enabled(true)
                 .locked(false)
                 .build();
-        return userRepository.save(user);
+        user = userRepository.save(user);
+
+        String displayName = ((firstName != null ? firstName : "")
+                + " " + (lastName != null ? lastName : "")).trim();
+        if (displayName.isEmpty()) {
+            displayName = email.split("@")[0];
+        }
+
+        UserProfile profile = UserProfile.builder()
+                .id(IdGenerator.generateId("user_profiles"))
+                .user(user)
+                .username(username != null && !username.isBlank() ? username : email.split("@")[0])
+                .displayName(displayName)
+                .country(countryOfOrigin)
+                .build();
+        userProfileRepository.save(profile);
+
+        return user;
     }
 
     @Transactional
     public User upsertOAuthUser(String email, String name, AuthProvider provider) {
         return userRepository.findByEmail(email)
                 .map(existing -> {
-                    existing.setAppUsername(name != null ? name : email);
                     existing.setAuthProvider(provider);
                     existing.setEnabled(true);
-                    return userRepository.save(existing);
+                    User saved = userRepository.save(existing);
+
+                    userProfileRepository.findByUserId(existing.getId()).ifPresent(p -> {
+                        if (name != null) {
+                            p.setDisplayName(name);
+                        }
+                        userProfileRepository.save(p);
+                    });
+
+                    return saved;
                 })
                 .orElseGet(() -> {
-                    String id = IdGenerator.generateId("users");
+                    String userId = IdGenerator.generateId("users");
                     User user = User.builder()
-                            .id(id)
+                            .id(userId)
                             .email(email)
-                            .appUsername(name != null ? name : email)
                             .role(Role.ROLE_USER)
                             .authProvider(provider)
                             .enabled(true)
                             .locked(false)
                             .build();
-                    return userRepository.save(user);
+                    user = userRepository.save(user);
+
+                    UserProfile profile = UserProfile.builder()
+                            .id(IdGenerator.generateId("user_profiles"))
+                            .user(user)
+                            .username(name != null ? name : email.split("@")[0])
+                            .displayName(name != null ? name : email.split("@")[0])
+                            .build();
+                    userProfileRepository.save(profile);
+
+                    return user;
                 });
     }
 
