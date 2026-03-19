@@ -9,6 +9,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
@@ -34,7 +35,16 @@ public class UserProfile extends AuditableEntity {
     private String id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "user_id", nullable = false, unique = true)
+    @JoinColumn(
+            name = "user_id",
+            referencedColumnName = "user_id",
+            nullable = false,
+            unique = true,
+            foreignKey = @ForeignKey(
+                    name = "fk_user_profiles_user_id",
+                    foreignKeyDefinition = "FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE"
+            )
+    )
     private User user;
 
     @Column(name = "username", length = 50, nullable = false, unique = true)

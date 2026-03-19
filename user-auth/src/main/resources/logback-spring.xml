@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!--
+        PII PROTECTION STRATEGY:
+        ========================
+        Sensitive fields (phone_number, date_of_birth, email) MUST NEVER appear
+        as raw values in log output. Protection is enforced at two levels:
+
+        1. CODE LEVEL: All services use PiiMaskingFilter.maskEmail(), maskPhone(),
+           maskDob() before including PII in log messages.
+
+        2. AUDIT LEVEL: ProfileService.buildChangedFieldsLog() intentionally
+           excludes phone_number and date_of_birth from the changed-fields list.
+
+        RULE: NEVER log raw PII values directly. Always mask first.
+    -->
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Application logging -->
+    <logger name="com.neong.vixie" level="DEBUG" />
+    <logger name="com.neong.vixie.helpers.api.DataMigrationRunner" level="INFO" />
+
+    <!-- Suppress verbose Hibernate SQL in default profile -->
+    <logger name="org.hibernate.SQL" level="WARN" />
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN" />
+
+    <!-- Spring Security debug (set to DEBUG only when troubleshooting auth) -->
+    <logger name="org.springframework.security" level="WARN" />
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+</configuration>

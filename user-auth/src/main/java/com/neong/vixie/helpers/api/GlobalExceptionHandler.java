@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
                 fieldErrors.put(error.getField(), error.getDefaultMessage())
         );
         log.warn("Validation failed: {}", fieldErrors);
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        return ResponseEntity.status(422)
                 .body(ErrorResponse.ofValidation("Validation failed", fieldErrors));
     }
 
