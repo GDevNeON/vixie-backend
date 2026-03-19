@@ -8,14 +8,16 @@ public record UserMeResponse(
         String id,
         String email,
         Role role,
-        AuthProvider authProvider
+        AuthProvider authProvider,
+        UserProfileResponse profile
 ) {
-    public static UserMeResponse fromUser(User user) {
+    public static UserMeResponse fromUser(User user, UserProfileResponse profile) {
         return new UserMeResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getRole(),
-                user.getAuthProvider()
+                user.getAuthProvider(),
+                profile
         );
     }
 }
