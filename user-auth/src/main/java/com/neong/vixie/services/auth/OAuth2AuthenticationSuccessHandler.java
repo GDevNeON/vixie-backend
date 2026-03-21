@@ -63,29 +63,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        String userAgent = request.getHeader("User-Agent");
-        boolean isAndroid = userAgent != null && userAgent.toLowerCase().contains("android");
-
-        String deeplinkUrl = UriComponentsBuilder.fromUriString(redirectUri)
+        String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("access_token", accessToken)
                 .queryParam("refresh_token", refreshToken)
                 .queryParam("token_type", "Bearer")
                 .queryParam("expires_in", jwtService.getAccessTokenExpirationSeconds())
                 .build()
                 .toUriString();
-
-        String targetUrl;
-        if (isAndroid) {
-            targetUrl = deeplinkUrl;
-        } else {
-            targetUrl = UriComponentsBuilder.fromPath("/oauth2/success")
-                    .queryParam("access_token", accessToken)
-                    .queryParam("refresh_token", refreshToken)
-                    .queryParam("token_type", "Bearer")
-                    .queryParam("expires_in", jwtService.getAccessTokenExpirationSeconds())
-                    .build()
-                    .toUriString();
-        }
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
