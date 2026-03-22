@@ -3,6 +3,7 @@ package com.neong.vixie.controllers.auth;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +27,8 @@ public class OAuth2RedirectController {
             @RequestParam(value = "refresh_token", required = false) String refreshToken,
             @RequestParam(value = "token_type", required = false) String tokenType,
             @RequestParam(value = "expires_in", required = false) String expiresIn,
-            @RequestParam(value = "error", required = false) String error
+            @RequestParam(value = "error", required = false) String error,
+            @RequestParam(value = "error_description", required = false) String errorDescription
     ) {
         Map<String, String> params = new LinkedHashMap<>();
         if (accessToken != null) params.put("access_token", accessToken);
@@ -34,19 +36,30 @@ public class OAuth2RedirectController {
         if (tokenType != null) params.put("token_type", tokenType);
         if (expiresIn != null) params.put("expires_in", expiresIn);
         if (error != null) params.put("error", error);
+        if (errorDescription != null) params.put("error_description", errorDescription);
 
         UriComponentsBuilder deepLinkBuilder = UriComponentsBuilder.fromUriString(redirectUri);
         for (Map.Entry<String, String> e : params.entrySet()) {
             deepLinkBuilder.queryParam(e.getKey(), e.getValue());
         }
-        String deepLink = deepLinkBuilder.build().toUriString();
+        String deepLink = deepLinkBuilder.build().encode(StandardCharsets.UTF_8).toUriString();
         String safeDeepLink = HtmlUtils.htmlEscape(deepLink);
+        String jsDeepLink = deepLink
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("'", "\\'")
+                .replace("\r", "")
+                .replace("\n", "");
 
         String title = "Đăng nhập thành công, Hãy truy cập đến ứng dụng";
         String body;
         if (error != null) {
             title = "Đăng nhập thất bại";
-            body = "<p>" + HtmlUtils.htmlEscape(error) + "</p>";
+            String message = error;
+            if (errorDescription != null && !errorDescription.isBlank()) {
+                message = error + ": " + errorDescription;
+            }
+            body = "<p>" + HtmlUtils.htmlEscape(message) + "</p>";
         } else {
             body = "<p>" + HtmlUtils.htmlEscape(title) + "</p>";
         }
@@ -62,8 +75,16 @@ public class OAuth2RedirectController {
                 "<div style=\"max-width: 720px; margin: 0 auto;\">" +
                 "<h2 style=\"margin: 0 0 12px 0;\">" + HtmlUtils.htmlEscape(title) + "</h2>" +
                 body +
-                "<a href=\"" + safeDeepLink + "\" style=\"display:inline-block; margin-top: 16px; padding: 12px 16px; background:#111827; color:white; text-decoration:none; border-radius: 10px;\">Mở ứng dụng</a>" +
-                "<p style=\"margin-top: 16px; color: #6b7280; word-break: break-all;\">" + safeDeepLink + "</p>" +
+                "<p style=\"margin-top: 18px;\">" +
+                "<a href=\"" + safeDeepLink + "\" style=\"display: inline-block; padding: 10px 14px; background: #111827; color: #fff; border-radius: 8px; text-decoration: none;\">Mở ứng dụng</a>" +
+                "</p>" +
+                "<script>" +
+                "(function(){" +
+                "var deepLink='" + jsDeepLink + "';" +
+                "if(!deepLink){return;}" +
+                "setTimeout(function(){ window.location.href = deepLink; }, 250);" +
+                "})();" +
+                "</script>" +
                 "</div>" +
                 "</body>" +
                 "</html>";

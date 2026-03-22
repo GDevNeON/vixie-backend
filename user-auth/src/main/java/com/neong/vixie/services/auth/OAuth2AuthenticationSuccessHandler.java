@@ -6,6 +6,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -32,6 +33,9 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException, ServletException {
+        String userAgent = request.getHeader("User-Agent");
+        boolean isAndroid = userAgent != null && userAgent.toLowerCase().contains("android");
+
         Object principal = authentication.getPrincipal();
         if (!(principal instanceof OAuth2User oAuth2User)) {
             super.onAuthenticationSuccess(request, response, authentication);
@@ -63,12 +67,17 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String accessToken = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
+        UriComponentsBuilder builder = isAndroid
+                ? UriComponentsBuilder.fromUriString(redirectUri)
+                : UriComponentsBuilder.fromPath("/oauth2/success");
+
+        String targetUrl = builder
                 .queryParam("access_token", accessToken)
                 .queryParam("refresh_token", refreshToken)
                 .queryParam("token_type", "Bearer")
                 .queryParam("expires_in", jwtService.getAccessTokenExpirationSeconds())
                 .build()
+                .encode(StandardCharsets.UTF_8)
                 .toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
