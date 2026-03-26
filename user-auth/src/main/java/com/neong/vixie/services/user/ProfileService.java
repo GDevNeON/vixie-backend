@@ -8,6 +8,7 @@ import com.neong.vixie.models.dto.UpdateProfileRequest;
 import com.neong.vixie.models.dto.UserProfileResponse;
 import com.neong.vixie.repositories.user.UserProfileRepository;
 import com.neong.vixie.repositories.user.UserRepository;
+import com.neong.vixie.services.storage.StorageService;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class ProfileService {
@@ -24,11 +26,14 @@ public class ProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final UserRepository userRepository;
+    private final StorageService storageService;
 
     public ProfileService(UserProfileRepository userProfileRepository,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          StorageService storageService) {
         this.userProfileRepository = userProfileRepository;
         this.userRepository = userRepository;
+        this.storageService = storageService;
     }
 
     /**
@@ -54,13 +59,27 @@ public class ProfileService {
             profile.setUsername(HtmlSanitizer.sanitize(request.username()));
         }
 
-        // Age validation
+        // DOB immutability: if already set, reject changes
         if (request.dateOfBirth() != null) {
+            if (profile.getDateOfBirth() != null
+                    && !request.dateOfBirth().equals(profile.getDateOfBirth())) {
+                throw new IllegalArgumentException("DOB_IMMUTABLE");
+            }
+            // Age validation (only applies when setting for the first time)
             int age = Period.between(request.dateOfBirth(), LocalDate.now()).getYears();
             if (age < MINIMUM_AGE) {
                 throw new IllegalArgumentException("UNDERAGE");
             }
             profile.setDateOfBirth(request.dateOfBirth());
+        }
+
+        // Phone number structural validation
+        if (request.phoneNumber() != null) {
+            String phone = request.phoneNumber().trim();
+            if (!phone.startsWith("+") || phone.length() < 8 || phone.length() > 16) {
+                throw new IllegalArgumentException("INVALID_PHONE_FORMAT");
+            }
+            profile.setPhoneNumber(phone);
         }
 
         // Partial merge with sanitization for string fields
@@ -69,9 +88,6 @@ public class ProfileService {
         }
         if (request.bio() != null) {
             profile.setBio(HtmlSanitizer.sanitize(request.bio()));
-        }
-        if (request.phoneNumber() != null) {
-            profile.setPhoneNumber(request.phoneNumber());
         }
         if (request.gender() != null) {
             profile.setGender(request.gender());
@@ -86,6 +102,19 @@ public class ProfileService {
         UserProfile saved = userProfileRepository.save(profile);
         log.info("Profile updated for user_id={}, changed_fields=[{}]",
                 userId, buildChangedFieldsLog(request));
+        return UserProfileResponse.fromEntity(saved);
+    }
+
+    /**
+     * Upload avatar file to cloud storage and update the profile.
+     */
+    @Transactional
+    public UserProfileResponse uploadAvatar(String userId, MultipartFile file) {
+        UserProfile profile = getOrCreateProfile(userId);
+        String avatarUrl = storageService.uploadAvatar(file, userId);
+        profile.setAvatarUrl(avatarUrl);
+        UserProfile saved = userProfileRepository.save(profile);
+        log.info("Avatar uploaded for user_id={}", userId);
         return UserProfileResponse.fromEntity(saved);
     }
 
