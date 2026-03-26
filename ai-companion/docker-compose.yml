@@ -1,0 +1,39 @@
+version: '3.8'
+
+# AI Companion Service — Docker Compose
+#
+# This compose file starts Redis only.
+# PostgreSQL is provided by the user-auth docker-compose.
+#
+# SETUP:
+#   1. Ensure user-auth docker-compose is running first:
+#      cd vixie-backend/user-auth && docker-compose up -d
+#
+#   2. Create the vixie_ai database (one-time):
+#      docker exec -it vixie-user-auth-postgres psql -U postgres -c "CREATE DATABASE vixie_ai;"
+#
+#   3. Start Redis:
+#      cd vixie-backend/ai-companion && docker-compose up -d
+#
+#   4. Run the service:
+#      ./mvnw spring-boot:run
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: vixie-ai-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - vixie-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  vixie-network:
+    external: true
+    name: user-auth_vixie-network
