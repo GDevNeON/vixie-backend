@@ -33,13 +33,13 @@ public class OtpService {
 
     public void sendRegistrationOtp(String email) {
         String code = generateAndStoreCode(email, OtpPurpose.REGISTRATION);
-        log.info("Generated registration OTP for {}: {}", email, code);
+        log.info("Generated registration OTP for {}", email);
         emailService.sendOtpEmail(email, code, "REGISTRATION");
     }
 
     public void sendForgotPasswordOtp(String email) {
         String code = generateAndStoreCode(email, OtpPurpose.PASSWORD_RESET);
-        log.info("Generated password reset OTP for {}: {}", email, code);
+        log.info("Generated password reset OTP for {}", email);
         emailService.sendOtpEmail(email, code, "PASSWORD_RESET");
     }
 

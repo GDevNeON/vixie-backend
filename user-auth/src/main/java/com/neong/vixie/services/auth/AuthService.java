@@ -13,6 +13,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -94,7 +97,17 @@ public class AuthService {
             username = request.email();
         }
 
-        // TODO: verify idToken with provider's public keys for additional security.
+        try {
+            JwtDecoder jwtDecoder;
+            if (provider == AuthProvider.GOOGLE) {
+                jwtDecoder = NimbusJwtDecoder.withJwkSetUri("https://www.googleapis.com/oauth2/v3/certs").build();
+            } else {
+                throw new UnsupportedOperationException("Incomplete implementation: Facebook JWKS currently unsupported");
+            }
+            jwtDecoder.decode(request.idToken());
+        } catch (JwtException e) {
+            throw new BadCredentialsException("Invalid token signature");
+        }
 
         User user = userService.upsertOAuthUser(request.email(), username, provider);
         String accessToken = jwtService.generateAccessToken(user);
