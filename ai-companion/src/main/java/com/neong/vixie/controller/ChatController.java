@@ -6,6 +6,7 @@ import com.neong.vixie.model.ChatResponseEnvelope;
 import com.neong.vixie.repository.ConversationRepository;
 import com.neong.vixie.service.CharacterPromptService;
 import com.neong.vixie.service.OpenAiService;
+import com.neong.vixie.service.SummarizationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -27,6 +28,7 @@ import java.util.List;
  * 3. Build system prompt from CharacterPromptService
  * 4. Stream OpenAI response to client via STOMP
  * 5. Save complete assistant response to Redis
+ * 6. Trigger summarization if history exceeds threshold
  */
 @Controller
 @RequiredArgsConstructor
@@ -37,6 +39,7 @@ public class ChatController {
     private final SimpMessagingTemplate messagingTemplate;
     private final ConversationRepository conversationRepository;
     private final CharacterPromptService characterPromptService;
+    private final SummarizationService summarizationService;
 
     @MessageMapping("/chat")
     public void handleChat(ChatRequestEnvelope request, Principal principal) {
@@ -92,6 +95,8 @@ public class ChatController {
                             if (!fullResponse.isEmpty()) {
                                 conversationRepository.addMessage(userId, characterId,
                                         ChatMessageDto.of("assistant", fullResponse.toString()));
+                                // 6. Trigger summarization if history is getting large
+                                summarizationService.summarizeIfNeeded(userId, characterId);
                             }
                             log.info("Chat response complete for user={}, length={}",
                                     userId, fullResponse.length());
