@@ -30,6 +30,7 @@
 		<java.version>21</java.version>
 		<jjwt.version>0.11.5</jjwt.version>
 	</properties>
+
 	<dependencies>
 		<!-- Web & REST -->
 		<dependency>
@@ -129,6 +130,14 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.8.6</version>
+		</dependency>
+
+		<!-- WebFlux (WebClient for OpenAI streaming) —
+		     Spring AI 1.1.x is incompatible with Spring Boot 4/Spring Framework 7.
+		     Using WebClient + SSE directly for OpenAI chat completions. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
 
 		<!-- Test -->
