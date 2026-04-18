@@ -1,5 +1,7 @@
 package com.neong.vixie.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Inbound STOMP message payload from Flutter client.
  * Sent to /app/chat destination.
@@ -8,7 +10,7 @@ package com.neong.vixie.model;
  * @param message     the user's message text
  */
 public record ChatRequestEnvelope(
-        String characterId,
-        String message
+        @JsonProperty("characterId") String characterId,
+        @JsonProperty("message") String message
 ) {
 }

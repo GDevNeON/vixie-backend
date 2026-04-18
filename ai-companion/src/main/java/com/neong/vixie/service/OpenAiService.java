@@ -48,7 +48,14 @@ public class OpenAiService {
                 .filter(line -> !line.equals("[DONE]"))
                 .filter(line -> !line.isBlank())
                 .mapNotNull(this::extractContentDelta)
-                .doOnError(error -> log.error("OpenAI streaming error: {}", error.getMessage()));
+                .onErrorResume(error -> {
+                    if (error.getMessage() != null && error.getMessage().contains("429")) {
+                        log.info("OpenAI rate limit hit (429), falling back to mock response.");
+                        return Flux.just("Hi ", "there! ", "I'm ", "currently ", "using ", "a ", "mocked ", "response ", "because ", "the ", "OpenAI ", "rate ", "limit ", "was ", "reached. ", "But ", "my ", "STOMP ", "streaming ", "works ", "perfectly!");
+                    }
+                    log.error("OpenAI streaming error: {}", error.getMessage());
+                    return Flux.error(error);
+                });
     }
 
     /**

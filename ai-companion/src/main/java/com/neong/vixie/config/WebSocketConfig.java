@@ -49,6 +49,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // Raw WebSocket endpoint (for pure STOMP clients like stomp_dart_client without SockJS)
+        registry.addEndpoint("/ws/ai/chat")
+                .setAllowedOrigins(allowedOrigins);
+                
+        // SockJS fallback endpoint
         registry.addEndpoint("/ws/ai/chat")
                 .setAllowedOrigins(allowedOrigins)
                 .withSockJS();
