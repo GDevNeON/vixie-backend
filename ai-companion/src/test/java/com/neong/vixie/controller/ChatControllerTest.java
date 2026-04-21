@@ -6,6 +6,7 @@ import com.neong.vixie.model.ChatResponseEnvelope;
 import com.neong.vixie.repository.ConversationRepository;
 import com.neong.vixie.service.CharacterPromptService;
 import com.neong.vixie.service.OpenAiService;
+import com.neong.vixie.service.MoodAndXpBatchService;
 import com.neong.vixie.service.SummarizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,7 @@ class ChatControllerTest {
     @Mock private ConversationRepository conversationRepository;
     @Mock private CharacterPromptService characterPromptService;
     @Mock private SummarizationService summarizationService;
+    @Mock private MoodAndXpBatchService moodAndXpBatchService;
     @Mock private Principal principal;
 
     private ChatController controller;
@@ -41,7 +43,8 @@ class ChatControllerTest {
     @BeforeEach
     void setUp() {
         controller = new ChatController(openAiService, messagingTemplate,
-                conversationRepository, characterPromptService, summarizationService);
+                conversationRepository, characterPromptService, summarizationService,
+                moodAndXpBatchService);
     }
 
     @Test
