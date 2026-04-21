@@ -5,6 +5,7 @@ import com.neong.vixie.model.ChatRequestEnvelope;
 import com.neong.vixie.model.ChatResponseEnvelope;
 import com.neong.vixie.repository.ConversationRepository;
 import com.neong.vixie.service.CharacterPromptService;
+import com.neong.vixie.service.MoodAndXpBatchService;
 import com.neong.vixie.service.OpenAiService;
 import com.neong.vixie.service.SummarizationService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ import java.util.List;
  * 4. Stream OpenAI response to client via STOMP
  * 5. Save complete assistant response to Redis
  * 6. Trigger summarization if history exceeds threshold
+ * 7. Every 5 messages: trigger async mood+XP batch analysis
  */
 @Controller
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class ChatController {
     private final ConversationRepository conversationRepository;
     private final CharacterPromptService characterPromptService;
     private final SummarizationService summarizationService;
+    private final MoodAndXpBatchService moodAndXpBatchService;
 
     @MessageMapping("/chat")
     public void handleChat(ChatRequestEnvelope request, Principal principal) {
@@ -97,6 +100,19 @@ public class ChatController {
                                         ChatMessageDto.of("assistant", fullResponse.toString()));
                                 // 6. Trigger summarization if history is getting large
                                 summarizationService.summarizeIfNeeded(userId, characterId);
+
+                                // 7. Trigger batch mood+XP analysis every 5 messages
+                                List<ChatMessageDto> currentHistory =
+                                        conversationRepository.getHistory(userId, characterId);
+                                if (currentHistory.size() % 5 == 0) {
+                                    // Take the last 5 messages for analysis
+                                    List<ChatMessageDto> recentMessages = currentHistory.subList(
+                                            Math.max(0, currentHistory.size() - 5),
+                                            currentHistory.size()
+                                    );
+                                    moodAndXpBatchService.analyzeAndApplyBatch(
+                                            userId, characterId, recentMessages);
+                                }
                             }
                             log.info("Chat response complete for user={}, length={}",
                                     userId, fullResponse.length());
