@@ -34,12 +34,12 @@ public class CharacterPersonality extends AuditableEntity {
     @Column(name = "character_id", nullable = false)
     private String characterId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "numeric(3,2)")
     private Double seriousness;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "numeric(3,2)")
     private Double energy;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "numeric(3,2)")
     private Double gentleness;
 }

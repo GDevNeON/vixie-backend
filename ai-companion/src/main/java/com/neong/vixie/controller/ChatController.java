@@ -61,7 +61,7 @@ public class ChatController {
         List<ChatMessageDto> history = conversationRepository.getHistory(userId, characterId);
 
         // 3. Build character system prompt
-        String systemPrompt = characterPromptService.buildSystemPrompt(characterId);
+        String systemPrompt = characterPromptService.buildSystemPrompt(userId, characterId);
 
         // 4. Stream OpenAI response to client
         StringBuilder fullResponse = new StringBuilder();
@@ -101,18 +101,17 @@ public class ChatController {
                                 // 6. Trigger summarization if history is getting large
                                 summarizationService.summarizeIfNeeded(userId, characterId);
 
-                                // 7. Trigger batch mood+XP analysis every 5 messages
+                                // 7. Trigger mood+XP analysis on every message
                                 List<ChatMessageDto> currentHistory =
                                         conversationRepository.getHistory(userId, characterId);
-                                if (currentHistory.size() % 5 == 0) {
-                                    // Take the last 5 messages for analysis
-                                    List<ChatMessageDto> recentMessages = currentHistory.subList(
-                                            Math.max(0, currentHistory.size() - 5),
-                                            currentHistory.size()
-                                    );
-                                    moodAndXpBatchService.analyzeAndApplyBatch(
-                                            userId, characterId, recentMessages);
-                                }
+                                        
+                                // Take the last 2 messages (user + assistant) for analysis
+                                List<ChatMessageDto> recentMessages = currentHistory.subList(
+                                        Math.max(0, currentHistory.size() - 2),
+                                        currentHistory.size()
+                                );
+                                moodAndXpBatchService.analyzeAndApplyBatch(
+                                        userId, characterId, recentMessages);
                             }
                             log.info("Chat response complete for user={}, length={}",
                                     userId, fullResponse.length());

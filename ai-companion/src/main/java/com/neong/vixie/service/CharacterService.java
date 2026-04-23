@@ -27,6 +27,7 @@ public class CharacterService {
     private final CharacterPersonalityRepository characterPersonalityRepository;
     private final RelationshipStateRepository relationshipStateRepository;
     private final MoodService moodService;
+    private final UserPreferencesService userPreferencesService;
 
     /**
      * Get all available characters.
@@ -76,13 +77,15 @@ public class CharacterService {
                         "gentleness", character.getDefaultGentleness()
                 ));
 
+        String activeCharacterId = userPreferencesService.getActiveCharacterId(userId);
+
         return new CharacterStateResponse(
                 mood,
                 relationship.getLevel(),
                 relationship.getCurrentXp(),
                 relationship.getXpToNextLevel(),
                 personalitySettings,
-                characterId
+                activeCharacterId
         );
     }
 

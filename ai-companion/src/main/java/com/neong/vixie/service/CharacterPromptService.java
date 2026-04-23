@@ -38,10 +38,7 @@ public class CharacterPromptService {
      * @param characterId the character identifier
      * @return the system prompt string
      */
-    public String buildSystemPrompt(String characterId) {
-        // Get userId from security context
-        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
-
+    public String buildSystemPrompt(String userId, String characterId) {
         // Fetch character from DB (fall back to defaults if not found)
         CharacterEntity character = characterRepository.findById(characterId).orElse(null);
         String characterName = character != null ? character.getName() : "Hana";

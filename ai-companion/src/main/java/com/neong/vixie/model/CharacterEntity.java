@@ -36,12 +36,12 @@ public class CharacterEntity extends AuditableEntity {
     @Column(name = "avatar_url", length = 512)
     private String avatarUrl;
 
-    @Column(name = "default_seriousness", nullable = false)
+    @Column(name = "default_seriousness", nullable = false, columnDefinition = "numeric(3,2)")
     private Double defaultSeriousness;
 
-    @Column(name = "default_energy", nullable = false)
+    @Column(name = "default_energy", nullable = false, columnDefinition = "numeric(3,2)")
     private Double defaultEnergy;
 
-    @Column(name = "default_gentleness", nullable = false)
+    @Column(name = "default_gentleness", nullable = false, columnDefinition = "numeric(3,2)")
     private Double defaultGentleness;
 }

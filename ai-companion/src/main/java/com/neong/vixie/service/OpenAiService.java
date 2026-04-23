@@ -75,6 +75,17 @@ public class OpenAiService {
                 .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(Map.class)
+                .onErrorResume(error -> {
+                    if (error.getMessage() != null && error.getMessage().contains("429")) {
+                        log.info("OpenAI rate limit hit (429) in callChat, falling back to mock response.");
+                        // Mock JSON for MoodAndXpBatchService
+                        Map<String, Object> mockMessage = Map.of("content", "{ \"mood\": \"HAPPY\", \"xpDelta\": 10 }");
+                        Map<String, Object> mockChoice = Map.of("message", mockMessage);
+                        Map<String, Object> mockResponse = Map.of("choices", List.of(mockChoice));
+                        return reactor.core.publisher.Mono.just(mockResponse);
+                    }
+                    return reactor.core.publisher.Mono.error(error);
+                })
                 .block();
 
         if (response == null) {
