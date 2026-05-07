@@ -32,4 +32,12 @@ public class UserPreferences extends AuditableEntity {
 
     @Column(name = "active_character_id")
     private String activeCharacterId;
+
+    @Builder.Default
+    @Column(name = "voice_muted")
+    private Boolean voiceMuted = false;
+
+    @Builder.Default
+    @Column(name = "voice_volume", columnDefinition = "numeric(3,2)")
+    private Double voiceVolume = 1.0;
 }

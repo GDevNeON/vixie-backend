@@ -10,6 +10,7 @@ public record CharacterResponse(
         String name,
         String description,
         String avatarUrl,
-        Map<String, Double> defaultPersonality
+        Map<String, Double> defaultPersonality,
+        String elevenlabsVoiceId
 ) {
 }

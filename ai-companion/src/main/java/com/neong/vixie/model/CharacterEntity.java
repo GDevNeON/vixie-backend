@@ -44,4 +44,7 @@ public class CharacterEntity extends AuditableEntity {
 
     @Column(name = "default_gentleness", nullable = false, columnDefinition = "numeric(3,2)")
     private Double defaultGentleness;
+
+    @Column(name = "elevenlabs_voice_id")
+    private String elevenlabsVoiceId;
 }

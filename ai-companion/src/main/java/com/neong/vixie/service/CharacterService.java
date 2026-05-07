@@ -122,7 +122,8 @@ public class CharacterService {
                         "seriousness", entity.getDefaultSeriousness(),
                         "energy", entity.getDefaultEnergy(),
                         "gentleness", entity.getDefaultGentleness()
-                )
+                ),
+                entity.getElevenlabsVoiceId()
         );
     }
 

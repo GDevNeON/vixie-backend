@@ -1,9 +1,14 @@
 package com.neong.vixie.controller;
 
 import com.neong.vixie.dto.ActiveCharacterRequest;
+import com.neong.vixie.dto.VoicePreferencesPatchRequest;
+import com.neong.vixie.dto.VoicePreferencesResponse;
+import com.neong.vixie.model.UserPreferences;
 import com.neong.vixie.service.UserPreferencesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +19,8 @@ import java.security.Principal;
 /**
  * REST controller for user preferences.
  * - POST /api/users/preferences/active-character — set active companion
+ * - GET /api/users/preferences/voice — get voice preferences
+ * - PATCH /api/users/preferences/voice — update voice preferences (partial)
  */
 @RestController
 @RequestMapping("/api/users/preferences")
@@ -30,4 +37,24 @@ public class UserPreferencesController {
         userPreferencesService.setActiveCharacter(userId, request.characterId());
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/voice")
+    public ResponseEntity<VoicePreferencesResponse> getVoicePreferences(Principal principal) {
+        String userId = principal.getName();
+        UserPreferences prefs = userPreferencesService.getOrCreatePreferences(userId);
+        return ResponseEntity.ok(new VoicePreferencesResponse(
+                prefs.getVoiceMuted(),
+                prefs.getVoiceVolume()
+        ));
+    }
+
+    @PatchMapping("/voice")
+    public ResponseEntity<Void> patchVoicePreferences(
+            @RequestBody VoicePreferencesPatchRequest request,
+            Principal principal) {
+        String userId = principal.getName();
+        userPreferencesService.patchVoicePreferences(userId, request.voiceMuted(), request.voiceVolume());
+        return ResponseEntity.noContent().build();
+    }
 }
+
