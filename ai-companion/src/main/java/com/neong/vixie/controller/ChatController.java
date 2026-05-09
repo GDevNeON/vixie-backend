@@ -1,5 +1,6 @@
 package com.neong.vixie.controller;
 
+import com.neong.vixie.dto.TtsTriggerPayload;
 import com.neong.vixie.model.ChatMessageDto;
 import com.neong.vixie.model.ChatRequestEnvelope;
 import com.neong.vixie.model.ChatResponseEnvelope;
@@ -8,6 +9,7 @@ import com.neong.vixie.service.CharacterPromptService;
 import com.neong.vixie.service.MoodAndXpBatchService;
 import com.neong.vixie.service.OpenAiService;
 import com.neong.vixie.service.SummarizationService;
+import com.neong.vixie.service.TtsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -43,6 +45,7 @@ public class ChatController {
     private final CharacterPromptService characterPromptService;
     private final SummarizationService summarizationService;
     private final MoodAndXpBatchService moodAndXpBatchService;
+    private final TtsService ttsService;
 
     @MessageMapping("/chat")
     public void handleChat(ChatRequestEnvelope request, Principal principal) {
@@ -112,6 +115,19 @@ public class ChatController {
                                 );
                                 moodAndXpBatchService.analyzeAndApplyBatch(
                                         userId, characterId, recentMessages);
+
+                                // 8. Emit TTS trigger to /user/queue/tts
+                                TtsTriggerPayload ttsPayload = ttsService.generateTtsPayload(
+                                        fullResponse.toString(), characterId);
+                                if (ttsPayload != null) {
+                                    messagingTemplate.convertAndSendToUser(
+                                            userId,
+                                            "/queue/tts",
+                                            ttsPayload
+                                    );
+                                    log.info("TTS trigger emitted for user={}, voiceId={}",
+                                            userId, ttsPayload.voiceId());
+                                }
                             }
                             log.info("Chat response complete for user={}, length={}",
                                     userId, fullResponse.length());
