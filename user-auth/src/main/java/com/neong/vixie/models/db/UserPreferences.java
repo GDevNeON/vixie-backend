@@ -60,4 +60,12 @@ public class UserPreferences extends AuditableEntity {
     @Builder.Default
     @Column(name = "notification_email")
     private Boolean notificationEmail = true;
+
+    @Builder.Default
+    @Column(name = "voice_muted")
+    private Boolean voiceMuted = false;
+
+    @Builder.Default
+    @Column(name = "voice_volume")
+    private Double voiceVolume = 1.0;
 }
