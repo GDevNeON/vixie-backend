@@ -69,8 +69,7 @@ public class UserPreferencesService {
             preferences.setVoiceMuted(voiceMuted);
         }
         if (voiceVolume != null) {
-            // Clamp volume to valid range
-            preferences.setVoiceVolume(Math.max(0.0, Math.min(1.0, voiceVolume)));
+            preferences.setVoiceVolume(voiceVolume);
         }
 
         userPreferencesRepository.save(preferences);

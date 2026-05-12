@@ -8,6 +8,7 @@ import com.neong.vixie.service.CharacterPromptService;
 import com.neong.vixie.service.OpenAiService;
 import com.neong.vixie.service.MoodAndXpBatchService;
 import com.neong.vixie.service.SummarizationService;
+import com.neong.vixie.service.TtsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ class ChatControllerTest {
     @Mock private CharacterPromptService characterPromptService;
     @Mock private SummarizationService summarizationService;
     @Mock private MoodAndXpBatchService moodAndXpBatchService;
+    @Mock private TtsService ttsService;
     @Mock private Principal principal;
 
     private ChatController controller;
@@ -44,14 +46,14 @@ class ChatControllerTest {
     void setUp() {
         controller = new ChatController(openAiService, messagingTemplate,
                 conversationRepository, characterPromptService, summarizationService,
-                moodAndXpBatchService);
+                moodAndXpBatchService, ttsService);
     }
 
     @Test
     void handleChat_savesUserMessage() {
         when(principal.getName()).thenReturn("user_123");
         when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
-        when(characterPromptService.buildSystemPrompt("char_default")).thenReturn("system prompt");
+        when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("system prompt");
         when(openAiService.streamChat(anyString(), anyList())).thenReturn(Flux.empty());
 
         ChatRequestEnvelope request = new ChatRequestEnvelope("char_default", "Hello!");
@@ -65,7 +67,7 @@ class ChatControllerTest {
     void handleChat_sendsChunksToUser() throws InterruptedException {
         when(principal.getName()).thenReturn("user_123");
         when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
-        when(characterPromptService.buildSystemPrompt("char_default")).thenReturn("prompt");
+        when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("prompt");
         when(openAiService.streamChat(anyString(), anyList()))
                 .thenReturn(Flux.just("Hello", " there", "!"));
 
@@ -92,7 +94,7 @@ class ChatControllerTest {
     void handleChat_savesAssistantResponseOnComplete() throws InterruptedException {
         when(principal.getName()).thenReturn("user_123");
         when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
-        when(characterPromptService.buildSystemPrompt("char_default")).thenReturn("prompt");
+        when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("prompt");
         when(openAiService.streamChat(anyString(), anyList()))
                 .thenReturn(Flux.just("AI ", "response"));
 
@@ -118,7 +120,7 @@ class ChatControllerTest {
     void handleChat_sendsErrorOnFailure() throws InterruptedException {
         when(principal.getName()).thenReturn("user_123");
         when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
-        when(characterPromptService.buildSystemPrompt("char_default")).thenReturn("prompt");
+        when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("prompt");
         when(openAiService.streamChat(anyString(), anyList()))
                 .thenReturn(Flux.error(new RuntimeException("API error")));
 

@@ -8,6 +8,7 @@ This guide provides detailed instructions for setting up and running the VixieAI
 - [Architecture Overview](#architecture-overview)
 - [Environment Setup](#environment-setup)
 - [Database Setup](#database-setup)
+- [OAuth2 Configuration (Google)](#oauth2-configuration-google)
 - [User Authentication Service](#user-authentication-service)
 - [AI Companion Service](#ai-companion-service)
 - [Docker Setup](#docker-setup)
@@ -199,6 +200,58 @@ CREATE DATABASE vixie_ai;
 ```bash
 redis-server
 ```
+
+## OAuth2 Configuration (Google)
+
+To set up Google login for VixieAI, you need to perform the following steps on the Google Cloud Console:
+
+### 1. Create a Google Cloud Project
+
+1. Visit the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project (e.g., `VixieAI-Auth`).
+
+### 2. Set Up OAuth Consent Screen
+
+1. Go to **APIs & Services** > **OAuth consent screen**.
+2. Select **External** and click **Create**.
+3. Fill in the required information:
+   - **App name**: VixieAI
+   - **User support email**: Your email address.
+   - **Developer contact information**: Your email address.
+4. Click **Save and Continue** through the Scopes and Test Users steps.
+
+### 3. Create OAuth 2.0 Credentials
+
+1. Go to **APIs & Services** > **Credentials**.
+2. Click **Create Credentials** > **OAuth client ID**.
+3. Select **Application type**: **Web application**.
+4. **Authorized JavaScript origins**:
+   - `http://localhost:8080`
+   - `https://YOUR_NGROK_URL` (if you are using ngrok)
+5. **Authorized redirect URIs**:
+   - `http://localhost:8080/api/oauth2/callback/google`
+   - `https://YOUR_NGROK_URL/api/oauth2/callback/google`
+   - *Note: `/api/oauth2/callback/google` is the default endpoint configured in the backend.*
+6. Click **Create**. You will receive your **Client ID** and **Client Secret**.
+
+### 4. Backend Configuration
+
+Update the `.env` file in the `user-auth/` directory:
+
+```env
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+BASE_URL=http://localhost:8080 # Or your ngrok URL
+```
+
+### Authentication Workflow
+
+1. **Initiation**: The client application (Flutter) opens the URL: `${BASE_URL}/oauth2/authorization/google`.
+2. **Authentication**: The user logs in via the Google interface.
+3. **Callback**: Google redirects back to the backend at `${BASE_URL}/api/oauth2/callback/google`.
+4. **Completion**: The backend processes the request, generates a JWT, and redirects the user back to the application via a Deep Link:
+   - `vixie://oauth2/success?access_token=...&refresh_token=...`
+   - You can customize this deep link using the `APP_OAUTH2_REDIRECT_URI` variable in the `.env` file.
 
 ## User Authentication Service
 
@@ -440,18 +493,12 @@ During development, especially when testing on physical Android devices, you nee
 
 ### 1. Install ngrok
 Download and install ngrok from [ngrok.com](https://ngrok.com/download).
+Extract the downloaded zip file to an excluded folder to avoid detection by antivirus software.
 
 ### 2. Start Tunnels
-Since VixieAI uses two services, you need to tunnel both.
-
 **Tunnel User Auth Service (8080):**
 ```bash
 ngrok http 8080
-```
-
-**Tunnel AI Companion Service (8081):**
-```bash
-ngrok http 8081
 ```
 
 ### 3. Update Environment Variables
@@ -459,11 +506,8 @@ Copy the forwarding URLs provided by ngrok (e.g., `https://renee-arumlike-azaria
 
 **user-auth/.env:**
 ```env
-BASE_URL=https://renee-arumlike-azariah.ngrok-free.dev
+BASE_URL=YOUR_NGROK_TUNNEL_URL
 ```
-
-> [!IMPORTANT]
-> The backend URL changes every time you restart the ngrok tunnel (on the free tier). You must update the `API_BASE_URL` and `AI_BASE_URL` in the frontend `.env` file accordingly.
 
 ## Project Structure
 
