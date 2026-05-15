@@ -3,12 +3,12 @@ package com.neong.vixie.service;
 import com.neong.vixie.model.CharacterEntity;
 import com.neong.vixie.model.CharacterPersonality;
 import com.neong.vixie.model.RelationshipState;
+import com.neong.vixie.model.UserInteractionProfile;
 import com.neong.vixie.repository.CharacterPersonalityRepository;
 import com.neong.vixie.repository.CharacterRepository;
 import com.neong.vixie.repository.RelationshipStateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
@@ -19,6 +19,9 @@ import java.time.ZoneOffset;
  *
  * Phase 4: Replaced stub with real DB lookups for character personality,
  * mood, and relationship state. Method signature stays stable.
+ *
+ * Phase 8: Added user preference personalization clause from
+ * UserInteractionProfile (message length, topics, tone).
  */
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class CharacterPromptService {
     private final CharacterPersonalityRepository characterPersonalityRepository;
     private final RelationshipStateRepository relationshipStateRepository;
     private final MoodService moodService;
+    private final UserInteractionProfileService profileService;
 
     /**
      * Build a system prompt for the given character.
@@ -57,12 +61,16 @@ public class CharacterPromptService {
         // Get time of day
         String timeOfDay = getTimeOfDayBucket();
 
+        // Get user preference personalization (Phase 8)
+        String personalization = buildPersonalizationClause(userId);
+
         return String.format(
                 "You are %s, %s " +
                 "Your personality settings: %s. " +
                 "%s is currently feeling %s. Let this subtly colour her tone. " +
                 "It is currently %s. " +
                 "The user is a %s. " +
+                "%s" +
                 "Respond naturally and warmly in-character. " +
                 "Keep responses concise but engaging.",
                 characterName,
@@ -71,7 +79,8 @@ public class CharacterPromptService {
                 characterName,
                 mood,
                 timeOfDay,
-                relationshipTier
+                relationshipTier,
+                personalization
         );
     }
 
@@ -132,5 +141,44 @@ public class CharacterPromptService {
         if (hour >= 12 && hour < 17) return "afternoon";
         if (hour >= 17 && hour < 22) return "evening";
         return "night";
+    }
+
+    /**
+     * Build a personalization clause from the user's interaction profile.
+     * Returns empty string if no profile exists yet (graceful fallback).
+     */
+    private String buildPersonalizationClause(String userId) {
+        try {
+            UserInteractionProfile profile = profileService.getProfile(userId);
+            if (profile == null || profile.getTotalSessionCount() < 2) {
+                return "";
+            }
+
+            String lengthPref;
+            double avgLen = profile.getAvgMessageLength();
+            if (avgLen < 10) lengthPref = "short";
+            else if (avgLen < 30) lengthPref = "medium";
+            else lengthPref = "long";
+
+            String topics = profile.getTopTopics();
+            // Strip JSON array brackets for readability
+            topics = topics.replaceAll("[\\[\\]\"]", "");
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(String.format(
+                    "User preference: prefers %s responses, tone is %s. ",
+                    lengthPref,
+                    profile.getPreferredTone().toLowerCase()));
+
+            if (!topics.isEmpty()) {
+                sb.append(String.format("Topics they enjoy: %s. ", topics));
+            }
+
+            sb.append("Match their communication style. ");
+            return sb.toString();
+        } catch (Exception e) {
+            log.warn("Failed to build personalization clause for user={}: {}", userId, e.getMessage());
+            return "";
+        }
     }
 }

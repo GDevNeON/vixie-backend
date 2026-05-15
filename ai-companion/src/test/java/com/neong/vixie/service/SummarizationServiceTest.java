@@ -24,6 +24,7 @@ class SummarizationServiceTest {
 
     @Mock private ConversationRepository conversationRepository;
     @Mock private OpenAiService openAiService;
+    @Mock private UserInteractionProfileService profileService;
 
     private SummarizationService service;
 
@@ -32,7 +33,7 @@ class SummarizationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SummarizationService(conversationRepository, openAiService);
+        service = new SummarizationService(conversationRepository, openAiService, profileService);
     }
 
     @Test
