@@ -5,10 +5,12 @@ import com.neong.vixie.model.RelationshipState;
 import com.neong.vixie.repository.RelationshipStateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -16,6 +18,9 @@ import java.util.regex.Pattern;
 /**
  * Batch service that analyzes conversation sentiment to update mood and relationship XP.
  * Called asynchronously every 5 messages from ChatController — does NOT block the stream.
+ *
+ * Phase 8: Also emits emotion events via STOMP to /user/queue/emotion so the Flutter
+ * client can drive Live2D facial expressions in real-time.
  */
 @Service
 @RequiredArgsConstructor
@@ -25,6 +30,7 @@ public class MoodAndXpBatchService {
     private final OpenAiService openAiService;
     private final MoodService moodService;
     private final RelationshipStateRepository relationshipStateRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private static final String ANALYSIS_PROMPT =
             "Analyze the tone of these recent messages. " +
@@ -34,6 +40,19 @@ public class MoodAndXpBatchService {
 
     private static final Pattern MOOD_PATTERN = Pattern.compile("\"mood\"\\s*:\\s*\"(\\w+)\"");
     private static final Pattern XP_PATTERN = Pattern.compile("\"xpDelta\"\\s*:\\s*(\\d+)");
+
+    /**
+     * Map mood strings to Live2D expression IDs.
+     * Backend owns this mapping so Flutter doesn't need a local lookup table.
+     */
+    private static final Map<String, String> MOOD_TO_EXPRESSION = Map.of(
+            "HAPPY", "ExpressionHappy",
+            "SAD", "ExpressionSad",
+            "NEUTRAL", "ExpressionNeutral",
+            "ENERGETIC", "ExpressionSurprised",
+            "TIRED", "ExpressionSad",
+            "ANXIOUS", "ExpressionSad"
+    );
 
     /**
      * Asynchronously analyze the batch of recent messages and update mood + XP.
@@ -62,9 +81,17 @@ public class MoodAndXpBatchService {
                 xpDelta = Math.min(15, Math.max(0, xpDelta)); // Clamp 0-15
             }
 
+            // Check if mood actually changed before emitting (prevents expression flickering)
+            String previousMood = moodService.getCurrentMood(userId);
+
             // Update mood in Redis
             moodService.setCurrentMood(userId, mood);
             log.info("Batch analysis: mood={} xpDelta={} for user={}", mood, xpDelta, userId);
+
+            // Emit STOMP emotion event only when mood changes (Phase 8)
+            if (!mood.equals(previousMood)) {
+                emitEmotionEvent(userId, mood);
+            }
 
             // Update relationship XP in Postgres
             updateRelationshipXp(userId, characterId, xpDelta);
@@ -72,6 +99,25 @@ public class MoodAndXpBatchService {
         } catch (Exception e) {
             // On failure, keep existing mood/XP — log and continue
             log.error("Batch mood+XP analysis failed for user={}: {}", userId, e.getMessage());
+        }
+    }
+
+    /**
+     * Push emotion update to Flutter via STOMP /user/queue/emotion.
+     * Resolves mood to expressionId server-side. Catches all messaging errors
+     * so they never block the async batch process.
+     */
+    private void emitEmotionEvent(String userId, String mood) {
+        try {
+            String expressionId = MOOD_TO_EXPRESSION.getOrDefault(mood, "ExpressionNeutral");
+            Map<String, Object> payload = Map.of(
+                    "mood", mood,
+                    "expressionId", expressionId
+            );
+            messagingTemplate.convertAndSendToUser(userId, "/queue/emotion", payload);
+            log.info("Emotion event emitted: mood={} expressionId={} for user={}", mood, expressionId, userId);
+        } catch (Exception e) {
+            log.warn("Failed to emit emotion event for user={}: {}", userId, e.getMessage());
         }
     }
 
