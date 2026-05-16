@@ -72,9 +72,12 @@ public class GeminiService {
                 .onErrorResume(error -> {
                     if (error.getMessage() != null && error.getMessage().contains("429")) {
                         log.info("Gemini rate limit hit (429) in callChat, falling back to mock response.");
+                        String[] moods = {"HAPPY", "SAD", "NEUTRAL", "ENERGETIC", "TIRED", "ANXIOUS"};
+                        String randomMood = moods[new java.util.Random().nextInt(moods.length)];
                         // Mock JSON for MoodAndXpBatchService
-                        Map<String, Object> mockMessage = Map.of("content", "{ \"mood\": \"HAPPY\", \"xpDelta\": 10 }");
-                        Map<String, Object> mockChoice = Map.of("message", mockMessage);
+                        Map<String, Object> mockPart = Map.of("text", "{ \"mood\": \"" + randomMood + "\", \"xpDelta\": 10 }");
+                        Map<String, Object> mockContent = Map.of("parts", List.of(mockPart));
+                        Map<String, Object> mockMessage = Map.of("content", mockContent);
                         Map<String, Object> mockResponse = Map.of("candidates", List.of(mockMessage));
                         return reactor.core.publisher.Mono.just(mockResponse);
                     }
@@ -166,9 +169,13 @@ public class GeminiService {
 
     @SuppressWarnings("unchecked")
     private String extractResponseContent(Map<String, Object> response) {
+        log.info("Gemini raw API map: {}", response);
         try {
             List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
-            if (candidates == null || candidates.isEmpty()) return "";
+            if (candidates == null || candidates.isEmpty()) {
+                log.warn("Gemini response has no candidates! Return empty.");
+                return "";
+            }
             Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
             if (content == null) return "";
             List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");

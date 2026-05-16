@@ -32,7 +32,7 @@ import java.util.List;
  * 4. Stream Gemini response to client via STOMP
  * 5. Save complete assistant response to Redis
  * 6. Trigger summarization if history exceeds threshold
- * 7. Every 5 messages: trigger async mood+XP batch analysis
+ * 7. Every message: trigger async mood+XP batch analysis
  */
 @Controller
 @RequiredArgsConstructor
@@ -108,9 +108,9 @@ public class ChatController {
                                 List<ChatMessageDto> currentHistory =
                                         conversationRepository.getHistory(userId, characterId);
                                         
-                                // Take the last 2 messages (user + assistant) for analysis
+                                // Take the last 6 messages (user + assistant history) for analysis
                                 List<ChatMessageDto> recentMessages = currentHistory.subList(
-                                        Math.max(0, currentHistory.size() - 2),
+                                        Math.max(0, currentHistory.size() - 6),
                                         currentHistory.size()
                                 );
                                 moodAndXpBatchService.analyzeAndApplyBatch(

@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @SpringJUnitConfig(classes = AiConfig.class)
 @TestPropertySource(properties = {
         "ai.gemini.api-key=test-key-not-real",
-        "ai.gemini.model=gemini-2.5-flash"
+        "ai.gemini.model=gemini-3.1-flash-lite"
 })
 class AiConfigTest {
 
@@ -35,6 +35,6 @@ class AiConfigTest {
 
     @Test
     void modelConfigurationIsCorrect() {
-        assertEquals("gemini-2.5-flash", aiConfig.getModel(), "Default model should be gemini-2.5-flash");
+        assertEquals("gemini-3.1-flash-lite", aiConfig.getModel(), "Default model should be gemini-3.1-flash-lite");
     }
 }

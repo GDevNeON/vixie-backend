@@ -70,7 +70,7 @@ The VixieAI backend consists of two microservices:
    - Port: 8081
    - AI chat functionality with streaming responses
    - WebSocket support for real-time communication
-   - Integration with OpenAI and ElevenLabs APIs
+   - Integration with Google Gemini and ElevenLabs APIs
 
 Both services share the same PostgreSQL database and JWT secret for authentication.
 
@@ -156,8 +156,8 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
 JWT_SECRET=change-me-please-very-very-secret-jwt-key-change-me
 
 # AI Provider Keys
-OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4o
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-3.1-flash-lite
 ELEVENLABS_API_KEY=your_elevenlabs_api_key
 ```
 
@@ -325,7 +325,7 @@ java -jar target/ai-companion-0.0.1-SNAPSHOT.jar
 ### Key Features
 
 - Real-time AI chat via WebSocket
-- Streaming responses from OpenAI
+- Streaming responses from Gemini
 - Voice synthesis with ElevenLabs
 - Conversation history management
 - User session management with Redis
@@ -575,7 +575,7 @@ vixie-backend/
 - **Spring WebSocket**: Real-time communication
 - **Spring Data Redis**: Session management
 - **Spring WebFlux**: Reactive programming for AI streaming
-- **OpenAI API**: AI chat integration
+- **Gemini API**: AI chat integration
 - **ElevenLabs API**: Voice synthesis
 - **PostgreSQL**: Conversation storage
 - **Redis**: Session caching
@@ -668,7 +668,7 @@ keytool -import -alias cert -file certificate.cer -keystore $JAVA_HOME/lib/secur
 1. Check application logs for detailed error messages
 2. Verify all environment variables are set correctly
 3. Ensure all required services (PostgreSQL, Redis) are running
-4. Check network connectivity to external APIs (OpenAI, ElevenLabs)
+4. Check network connectivity to external APIs (Gemini, ElevenLabs)
 5. Review Spring Boot Actuator endpoints for health status
 
 ### Performance Monitoring

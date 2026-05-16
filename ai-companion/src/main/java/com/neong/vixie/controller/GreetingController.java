@@ -4,13 +4,12 @@ import com.neong.vixie.service.GreetingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.util.Map;
 
 /**
@@ -38,14 +37,14 @@ public class GreetingController {
     @GetMapping("/{characterId}/greeting/daily")
     public ResponseEntity<Map<String, Object>> getDailyGreeting(
             @PathVariable String characterId,
-            @AuthenticationPrincipal UserDetails user) {
+            Principal principal) {
 
-        if (user == null) {
+        if (principal == null) {
             return ResponseEntity.status(401).build();
         }
 
         Map<String, Object> result = greetingService.getDailyGreeting(
-                user.getUsername(), characterId);
+                principal.getName(), characterId);
 
         return ResponseEntity.ok(result);
     }

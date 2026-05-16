@@ -64,7 +64,7 @@ public class CharacterPromptService {
         // Get user preference personalization (Phase 8)
         String personalization = buildPersonalizationClause(userId);
 
-        return String.format(
+        String finalPrompt = String.format(
                 "You are %s, %s " +
                 "Your personality settings: %s. " +
                 "%s is currently feeling %s. Let this subtly colour her tone. " +
@@ -82,6 +82,10 @@ public class CharacterPromptService {
                 relationshipTier,
                 personalization
         );
+
+        log.info("Generated AI prompt for user={} character={}. Personalization: [{}]", userId, characterId, personalization.trim());
+
+        return finalPrompt;
     }
 
     /**
