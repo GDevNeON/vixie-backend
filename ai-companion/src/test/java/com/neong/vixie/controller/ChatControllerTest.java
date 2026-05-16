@@ -5,7 +5,7 @@ import com.neong.vixie.model.ChatRequestEnvelope;
 import com.neong.vixie.model.ChatResponseEnvelope;
 import com.neong.vixie.repository.ConversationRepository;
 import com.neong.vixie.service.CharacterPromptService;
-import com.neong.vixie.service.OpenAiService;
+import com.neong.vixie.service.GeminiService;
 import com.neong.vixie.service.MoodAndXpBatchService;
 import com.neong.vixie.service.SummarizationService;
 import com.neong.vixie.service.TtsService;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ChatControllerTest {
 
-    @Mock private OpenAiService openAiService;
+    @Mock private GeminiService geminiService;
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private ConversationRepository conversationRepository;
     @Mock private CharacterPromptService characterPromptService;
@@ -44,7 +44,7 @@ class ChatControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new ChatController(openAiService, messagingTemplate,
+        controller = new ChatController(geminiService, messagingTemplate,
                 conversationRepository, characterPromptService, summarizationService,
                 moodAndXpBatchService, ttsService);
     }
@@ -54,7 +54,7 @@ class ChatControllerTest {
         when(principal.getName()).thenReturn("user_123");
         when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
         when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("system prompt");
-        when(openAiService.streamChat(anyString(), anyList())).thenReturn(Flux.empty());
+        when(geminiService.streamChat(anyString(), anyList())).thenReturn(Flux.empty());
 
         ChatRequestEnvelope request = new ChatRequestEnvelope("char_default", "Hello!");
         controller.handleChat(request, principal);
@@ -68,7 +68,7 @@ class ChatControllerTest {
         when(principal.getName()).thenReturn("user_123");
         when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
         when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("prompt");
-        when(openAiService.streamChat(anyString(), anyList()))
+        when(geminiService.streamChat(anyString(), anyList()))
                 .thenReturn(Flux.just("Hello", " there", "!"));
 
         controller.handleChat(new ChatRequestEnvelope("char_default", "Hi"), principal);
@@ -95,7 +95,7 @@ class ChatControllerTest {
         when(principal.getName()).thenReturn("user_123");
         when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
         when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("prompt");
-        when(openAiService.streamChat(anyString(), anyList()))
+        when(geminiService.streamChat(anyString(), anyList()))
                 .thenReturn(Flux.just("AI ", "response"));
 
         controller.handleChat(new ChatRequestEnvelope("char_default", "Hi"), principal);
@@ -121,7 +121,7 @@ class ChatControllerTest {
         when(principal.getName()).thenReturn("user_123");
         when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
         when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("prompt");
-        when(openAiService.streamChat(anyString(), anyList()))
+        when(geminiService.streamChat(anyString(), anyList()))
                 .thenReturn(Flux.error(new RuntimeException("API error")));
 
         controller.handleChat(new ChatRequestEnvelope("char_default", "Hi"), principal);

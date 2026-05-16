@@ -7,7 +7,7 @@ import com.neong.vixie.model.ChatResponseEnvelope;
 import com.neong.vixie.repository.ConversationRepository;
 import com.neong.vixie.service.CharacterPromptService;
 import com.neong.vixie.service.MoodAndXpBatchService;
-import com.neong.vixie.service.OpenAiService;
+import com.neong.vixie.service.GeminiService;
 import com.neong.vixie.service.SummarizationService;
 import com.neong.vixie.service.TtsService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ import java.util.List;
  * 1. Receive message from user
  * 2. Save to Redis conversation history
  * 3. Build system prompt from CharacterPromptService
- * 4. Stream OpenAI response to client via STOMP
+ * 4. Stream Gemini response to client via STOMP
  * 5. Save complete assistant response to Redis
  * 6. Trigger summarization if history exceeds threshold
  * 7. Every 5 messages: trigger async mood+XP batch analysis
@@ -39,7 +39,7 @@ import java.util.List;
 @Slf4j
 public class ChatController {
 
-    private final OpenAiService openAiService;
+    private final GeminiService geminiService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ConversationRepository conversationRepository;
     private final CharacterPromptService characterPromptService;
@@ -66,10 +66,10 @@ public class ChatController {
         // 3. Build character system prompt
         String systemPrompt = characterPromptService.buildSystemPrompt(userId, characterId);
 
-        // 4. Stream OpenAI response to client
+        // 4. Stream Gemini response to client
         StringBuilder fullResponse = new StringBuilder();
 
-        openAiService.streamChat(systemPrompt, history)
+        geminiService.streamChat(systemPrompt, history)
                 .subscribe(
                         // onNext: send each token chunk to the user
                         chunk -> {
@@ -82,7 +82,7 @@ public class ChatController {
                         },
                         // onError: send error message
                         error -> {
-                            log.error("OpenAI stream error for user={}: {}",
+                            log.error("Gemini stream error for user={}: {}",
                                     userId, error.getMessage());
                             messagingTemplate.convertAndSendToUser(
                                     userId,

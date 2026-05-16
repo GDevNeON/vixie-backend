@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class MoodAndXpBatchService {
 
-    private final OpenAiService openAiService;
+    private final GeminiService geminiService;
     private final MoodService moodService;
     private final RelationshipStateRepository relationshipStateRepository;
     private final SimpMessagingTemplate messagingTemplate;
@@ -64,7 +64,7 @@ public class MoodAndXpBatchService {
             log.info("Starting batch mood+XP analysis for user={} character={}", userId, characterId);
 
             // Call LLM for analysis
-            String response = openAiService.callChat(ANALYSIS_PROMPT, recentMessages);
+            String response = geminiService.callChat(ANALYSIS_PROMPT, recentMessages);
 
             // Parse mood
             String mood = "NEUTRAL";

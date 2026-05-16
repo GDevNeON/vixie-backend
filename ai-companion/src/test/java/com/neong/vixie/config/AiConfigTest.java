@@ -11,13 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Verifies that the OpenAI WebClient bean is correctly configured
+ * Verifies that the Gemini WebClient bean is correctly configured
  * and available in the application context.
  */
 @SpringJUnitConfig(classes = AiConfig.class)
 @TestPropertySource(properties = {
-        "ai.openai.api-key=test-key-not-real",
-        "ai.openai.model=gpt-4o"
+        "ai.gemini.api-key=test-key-not-real",
+        "ai.gemini.model=gemini-2.5-flash"
 })
 class AiConfigTest {
 
@@ -28,13 +28,13 @@ class AiConfigTest {
     private AiConfig aiConfig;
 
     @Test
-    void openAiWebClientBeanExists() {
-        WebClient webClient = context.getBean("openAiWebClient", WebClient.class);
-        assertNotNull(webClient, "OpenAI WebClient bean should be configured");
+    void geminiWebClientBeanExists() {
+        WebClient webClient = context.getBean("geminiWebClient", WebClient.class);
+        assertNotNull(webClient, "Gemini WebClient bean should be configured");
     }
 
     @Test
     void modelConfigurationIsCorrect() {
-        assertEquals("gpt-4o", aiConfig.getModel(), "Default model should be gpt-4o");
+        assertEquals("gemini-2.5-flash", aiConfig.getModel(), "Default model should be gemini-2.5-flash");
     }
 }

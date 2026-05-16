@@ -6,38 +6,35 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * OpenAI API configuration for AI companion chat.
+ * Gemini API configuration for AI companion chat.
  *
- * Uses WebClient directly instead of Spring AI framework because
- * Spring AI 1.1.x is incompatible with Spring Boot 4 / Spring Framework 7
- * (NoSuchMethodError on HttpHeaders). When Spring AI 2.x GA is released
- * for Boot 4, this can be migrated to use ChatClient.
+ * Uses WebClient directly.
  *
- * Reads existing ai.openai.* property keys from application.properties.
+ * Reads existing ai.gemini.* property keys from application.properties.
  */
 @Configuration
 public class AiConfig {
 
-    @Value("${ai.openai.api-key}")
+    @Value("${ai.gemini.api-key}")
     private String apiKey;
 
-    @Value("${ai.openai.model:gpt-4o}")
+    @Value("${ai.gemini.model:gemini-2.5-flash}")
     private String model;
 
     /**
-     * WebClient pre-configured with OpenAI API base URL and Authorization header.
+     * WebClient pre-configured with Gemini API base URL and API key header.
      */
     @Bean
-    public WebClient openAiWebClient() {
+    public WebClient geminiWebClient() {
         return WebClient.builder()
-                .baseUrl("https://api.openai.com/v1")
-                .defaultHeader("Authorization", "Bearer " + apiKey)
+                .baseUrl("https://generativelanguage.googleapis.com/v1beta/models/")
+                .defaultHeader("x-goog-api-key", apiKey)
                 .defaultHeader("Content-Type", "application/json")
                 .build();
     }
 
     /**
-     * Returns the configured OpenAI model name for use by services.
+     * Returns the configured Gemini model name for use by services.
      */
     public String getModel() {
         return model;

@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 class SummarizationServiceTest {
 
     @Mock private ConversationRepository conversationRepository;
-    @Mock private OpenAiService openAiService;
+    @Mock private GeminiService geminiService;
     @Mock private UserInteractionProfileService profileService;
 
     private SummarizationService service;
@@ -33,7 +33,7 @@ class SummarizationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SummarizationService(conversationRepository, openAiService, profileService);
+        service = new SummarizationService(conversationRepository, geminiService, profileService);
     }
 
     @Test
@@ -43,7 +43,7 @@ class SummarizationServiceTest {
         service.summarizeIfNeeded(USER_ID, CHAR_ID);
 
         verify(conversationRepository, never()).getHistory(anyString(), anyString());
-        verify(openAiService, never()).callChat(anyString(), anyList());
+        verify(geminiService, never()).callChat(anyString(), anyList());
     }
 
     @Test
@@ -56,7 +56,7 @@ class SummarizationServiceTest {
             history.add(ChatMessageDto.of(i % 2 == 0 ? "user" : "assistant", "Message " + i));
         }
         when(conversationRepository.getHistory(USER_ID, CHAR_ID)).thenReturn(history);
-        when(openAiService.callChat(anyString(), anyList()))
+        when(geminiService.callChat(anyString(), anyList()))
                 .thenReturn("The user discussed their favorite food and music preferences.");
 
         service.summarizeIfNeeded(USER_ID, CHAR_ID);
@@ -64,7 +64,7 @@ class SummarizationServiceTest {
         // Verify OpenAI was called with the oldest 10 messages
         ArgumentCaptor<List<ChatMessageDto>> messagesCaptor =
                 ArgumentCaptor.forClass(List.class);
-        verify(openAiService).callChat(anyString(), messagesCaptor.capture());
+        verify(geminiService).callChat(anyString(), messagesCaptor.capture());
         assertEquals(10, messagesCaptor.getValue().size());
 
         // Verify Redis was updated with summary
@@ -87,7 +87,7 @@ class SummarizationServiceTest {
             history.add(ChatMessageDto.of("user", "msg " + i));
         }
         when(conversationRepository.getHistory(USER_ID, CHAR_ID)).thenReturn(history);
-        when(openAiService.callChat(anyString(), anyList())).thenReturn("");
+        when(geminiService.callChat(anyString(), anyList())).thenReturn("");
 
         service.summarizeIfNeeded(USER_ID, CHAR_ID);
 
@@ -105,7 +105,7 @@ class SummarizationServiceTest {
             history.add(ChatMessageDto.of("user", "msg " + i));
         }
         when(conversationRepository.getHistory(USER_ID, CHAR_ID)).thenReturn(history);
-        when(openAiService.callChat(anyString(), anyList()))
+        when(geminiService.callChat(anyString(), anyList()))
                 .thenThrow(new RuntimeException("OpenAI rate limited"));
 
         // Should NOT throw — summarization failure is non-critical

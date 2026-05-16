@@ -31,7 +31,7 @@ import java.util.Map;
 public class GreetingService {
 
     private final StringRedisTemplate stringRedisTemplate;
-    private final OpenAiService openAiService;
+    private final GeminiService geminiService;
     private final CharacterRepository characterRepository;
     private final RelationshipStateRepository relationshipStateRepository;
 
@@ -96,7 +96,7 @@ public class GreetingService {
                 characterName, timeOfDay, relationshipTier
         );
 
-        return openAiService.callChat(prompt, List.of(
+        return geminiService.callChat(prompt, List.of(
                 ChatMessageDto.of("user", "Good " + timeOfDay + "!")
         ));
     }

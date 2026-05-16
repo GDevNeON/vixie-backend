@@ -45,7 +45,7 @@ public class SummarizationService {
             Pattern.compile("TOPICS:\\s*(.+)", Pattern.CASE_INSENSITIVE);
 
     private final ConversationRepository conversationRepository;
-    private final OpenAiService openAiService;
+    private final GeminiService geminiService;
     private final UserInteractionProfileService profileService;
 
     /**
@@ -81,8 +81,8 @@ public class SummarizationService {
                     .average()
                     .orElse(0.0);
 
-            // Call OpenAI to generate a summary (non-streaming)
-            String fullResponse = openAiService.callChat(SUMMARIZATION_PROMPT, toSummarize);
+            // Call Gemini to generate a summary (non-streaming)
+            String fullResponse = geminiService.callChat(SUMMARIZATION_PROMPT, toSummarize);
 
             if (fullResponse == null || fullResponse.isBlank()) {
                 log.warn("Summarization returned empty result for user={}", userId);
