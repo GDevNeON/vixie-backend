@@ -1,6 +1,7 @@
 package com.neong.vixie.helpers.api;
 
 import com.neong.vixie.models.dto.ErrorResponse;
+import com.neong.vixie.exceptions.InsufficientFundsException;
 import com.neong.vixie.services.user.UsernameConflictException;
 
 import java.util.HashMap;
@@ -46,6 +47,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ErrorResponse.of("FORBIDDEN", "Access denied"));
+    }
+
+    @ExceptionHandler(InsufficientFundsException.class)
+    public ResponseEntity<ErrorResponse> handleInsufficientFunds(InsufficientFundsException ex) {
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                .body(ErrorResponse.of("INSUFFICIENT_FUNDS", ex.getMessage()));
     }
 
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
