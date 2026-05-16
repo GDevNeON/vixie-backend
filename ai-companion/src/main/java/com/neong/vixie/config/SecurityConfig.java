@@ -43,6 +43,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers("/ws/**").permitAll()  // WebSocket handshake
+                        .requestMatchers("/api/marketplace/**").permitAll()  // Public catalog browsing
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
