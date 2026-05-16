@@ -31,7 +31,7 @@ import java.util.UUID;
 public class UserInteractionProfileService {
 
     private final UserInteractionProfileRepository profileRepository;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final int MAX_TOPICS = 10;
 
