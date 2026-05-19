@@ -3,6 +3,7 @@ package com.neong.vixie.helpers.api;
 import com.neong.vixie.models.dto.ErrorResponse;
 import com.neong.vixie.exceptions.InsufficientFundsException;
 import com.neong.vixie.services.user.UsernameConflictException;
+import com.neong.vixie.services.wallet.AdCapExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,6 +54,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInsufficientFunds(InsufficientFundsException ex) {
         return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
                 .body(ErrorResponse.of("INSUFFICIENT_FUNDS", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AdCapExceededException.class)
+    public ResponseEntity<ErrorResponse> handleAdCapExceeded(AdCapExceededException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ErrorResponse.of("AD_CAP_EXCEEDED", ex.getMessage()));
     }
 
     @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
