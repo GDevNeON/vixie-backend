@@ -1,0 +1,53 @@
+package com.neong.vixie.models.db;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.Instant;
+
+@Entity
+@Table(name = "gacha_pity_tracker")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class GachaPityTracker {
+
+    @Id
+    @Column(name = "pity_id", length = 64, nullable = false, updatable = false)
+    private String id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "user_id",
+            referencedColumnName = "user_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_gacha_pity_user")
+    )
+    private User user;
+
+    @Column(name = "banner_id", length = 64, nullable = false)
+    private String bannerId;
+
+    @Builder.Default
+    @Column(name = "current_pity", nullable = false)
+    private Integer currentPity = 0;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at")
+    private Instant updatedAt;
+}
