@@ -53,7 +53,11 @@ public class MarketplaceItem extends AuditableEntity {
     @Column(name = "preview_image_url", length = 2048)
     private String previewImageUrl;
 
+    @Enumerated(EnumType.STRING)
     @Builder.Default
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    @Column(nullable = false, length = 20)
+    private ContentStatus status = ContentStatus.PUBLISHED;
+
+    @Column(name = "creator_id", length = 64)
+    private String creatorId;
 }
