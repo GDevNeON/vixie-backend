@@ -5,7 +5,7 @@
 DELETE FROM marketplace_items WHERE id LIKE 'seed_%';
 
 -- Insert test marketplace items with placeholder Cloudinary URLs
-INSERT INTO marketplace_items (id, name, description, rarity, price_coins, price_fiat, thumbnail_url, preview_image_url, is_active, created_at) VALUES
+INSERT INTO marketplace_items (id, name, description, rarity, price_coins, price_fiat, thumbnail_url, preview_image_url, status, created_at) VALUES
 (
     'seed_sakura_dreams',
     'Sakura Dreams',
@@ -15,7 +15,7 @@ INSERT INTO marketplace_items (id, name, description, rarity, price_coins, price
     NULL,
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/sakura_dreams_thumb.jpg',
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/sakura_dreams_preview.jpg',
-    TRUE,
+    'PUBLISHED',
     NOW()
 ),
 (
@@ -27,7 +27,7 @@ INSERT INTO marketplace_items (id, name, description, rarity, price_coins, price
     NULL,
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/neon_cyberpunk_thumb.jpg',
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/neon_cyberpunk_preview.jpg',
-    TRUE,
+    'PUBLISHED',
     NOW()
 ),
 (
@@ -39,7 +39,7 @@ INSERT INTO marketplace_items (id, name, description, rarity, price_coins, price
     NULL,
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/midnight_galaxy_thumb.jpg',
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/midnight_galaxy_preview.jpg',
-    TRUE,
+    'PUBLISHED',
     NOW()
 ),
 (
@@ -51,7 +51,7 @@ INSERT INTO marketplace_items (id, name, description, rarity, price_coins, price
     NULL,
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/ocean_breeze_thumb.jpg',
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/ocean_breeze_preview.jpg',
-    TRUE,
+    'PUBLISHED',
     NOW()
 ),
 (
@@ -63,7 +63,7 @@ INSERT INTO marketplace_items (id, name, description, rarity, price_coins, price
     NULL,
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/dragon_festival_thumb.jpg',
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/dragon_festival_preview.jpg',
-    TRUE,
+    'PUBLISHED',
     NOW()
 ),
 (
@@ -75,6 +75,6 @@ INSERT INTO marketplace_items (id, name, description, rarity, price_coins, price
     NULL,
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/autumn_forest_thumb.jpg',
     'https://res.cloudinary.com/demo/image/upload/v1/vixie/autumn_forest_preview.jpg',
-    TRUE,
+    'PUBLISHED',
     NOW()
 );
