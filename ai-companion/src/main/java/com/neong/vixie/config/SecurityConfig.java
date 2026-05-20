@@ -45,6 +45,7 @@ public class SecurityConfig {
                         .requestMatchers("/ws/**").permitAll()  // WebSocket handshake
                         .requestMatchers("/api/marketplace/**").permitAll()  // Public catalog browsing
                         .requestMatchers("/api/gacha/banners", "/api/gacha/banners/**").permitAll()  // Public banner browsing
+                        .requestMatchers("/api/internal/**").permitAll()  // Service-to-service (secured via X-Service-Key)
                         // All other endpoints require authentication
                         .anyRequest().authenticated()
                 )
