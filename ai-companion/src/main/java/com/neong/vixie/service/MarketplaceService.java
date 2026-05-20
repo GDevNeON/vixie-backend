@@ -1,6 +1,7 @@
 package com.neong.vixie.service;
 
 import com.neong.vixie.dto.MarketplaceItemDto;
+import com.neong.vixie.model.ContentStatus;
 import com.neong.vixie.model.Rarity;
 import com.neong.vixie.repository.MarketplaceItemRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,17 +18,17 @@ public class MarketplaceService {
     public Page<MarketplaceItemDto> getItems(Rarity rarity, Pageable pageable) {
         if (rarity != null) {
             return marketplaceItemRepository
-                    .findByIsActiveTrueAndRarity(rarity, pageable)
+                    .findByStatusAndRarity(ContentStatus.PUBLISHED, rarity, pageable)
                     .map(MarketplaceItemDto::from);
         }
         return marketplaceItemRepository
-                .findByIsActiveTrue(pageable)
+                .findByStatus(ContentStatus.PUBLISHED, pageable)
                 .map(MarketplaceItemDto::from);
     }
 
     public MarketplaceItemDto getItemById(String id) {
         return marketplaceItemRepository.findById(id)
-                .filter(item -> Boolean.TRUE.equals(item.getIsActive()))
+                .filter(item -> ContentStatus.PUBLISHED.equals(item.getStatus()))
                 .map(MarketplaceItemDto::from)
                 .orElseThrow(() -> new IllegalArgumentException("Item not found: " + id));
     }
