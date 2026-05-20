@@ -136,6 +136,25 @@ public class CoinWalletService {
         inventoryRepository.save(inventory);
 
         log.info("User {} purchased item {} for {} coins", userId, itemId, expectedPriceCoins);
+
+        // Fire-and-forget: notify ai-companion for creator revenue tracking
+        // This MUST NOT rollback the purchase if it fails
+        try {
+            aiCompanionRestClient.post()
+                    .uri("/api/internal/purchase-event")
+                    .body(Map.of(
+                            "itemId", itemId,
+                            "buyerUserId", userId,
+                            "priceCoins", expectedPriceCoins,
+                            "purchasedAt", Instant.now().toString()
+                    ))
+                    .retrieve()
+                    .toBodilessEntity();
+            log.info("Purchase event sent to ai-companion for item {}", itemId);
+        } catch (Exception e) {
+            log.warn("Fire-and-forget purchase event failed for item {}: {}", itemId, e.getMessage());
+        }
+
         return new PurchaseResponse(true, wallet.getBalance(), itemId);
     }
 
