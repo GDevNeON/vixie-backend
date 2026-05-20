@@ -52,6 +52,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
+    @ExceptionHandler(org.springframework.web.client.RestClientResponseException.class)
+    public ResponseEntity<String> handleRestClientException(org.springframework.web.client.RestClientResponseException ex) {
+        return ResponseEntity.status(ex.getStatusCode()).body(ex.getResponseBodyAsString());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        Map<String, Object> body = Map.of(
+                "error", "BAD_REQUEST",
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString(),
+                "correlation_id", UUID.randomUUID().toString()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericError(Exception ex) {
         String correlationId = UUID.randomUUID().toString();

@@ -133,7 +133,7 @@ public class GachaService {
 
         // Commit to user-auth (deduct coins, add inventory, update pity)
         List<Map<String, String>> commitEntries = results.stream()
-                .map(r -> Map.of("itemId", r.itemId(), "rarity", r.rarity()))
+                .map(r -> Map.of("item_id", r.itemId(), "rarity", r.rarity()))
                 .toList();
 
         int newBalance = userAuthClient.commitPulls(userId, bannerId, totalCost, commitEntries);

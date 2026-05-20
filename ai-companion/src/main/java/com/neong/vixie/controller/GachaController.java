@@ -2,6 +2,7 @@ package com.neong.vixie.controller;
 
 import com.neong.vixie.service.GachaService;
 import com.neong.vixie.service.GachaService.PullResponse;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -23,20 +24,15 @@ public class GachaController {
 
     @PostMapping("/api/gacha/pull")
     public ResponseEntity<PullResponse> pull(
-            @AuthenticationPrincipal UserDetails user,
+            java.security.Principal principal,
             @Valid @RequestBody PullRequest request) {
-        String userId = getUserId(user);
+        String userId = principal.getName();
         PullResponse response = gachaService.pull(userId, request.bannerId(), request.count());
         return ResponseEntity.ok(response);
     }
 
-    private String getUserId(UserDetails user) {
-        // ai-companion JWT auth sets username as userId
-        return user.getUsername();
-    }
-
     public record PullRequest(
-            @NotBlank String bannerId,
+            @NotBlank @JsonProperty("banner_id") String bannerId,
             int count // 1 or 10
     ) {}
 }

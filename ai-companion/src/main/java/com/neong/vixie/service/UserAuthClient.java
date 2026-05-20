@@ -58,10 +58,10 @@ public class UserAuthClient {
     public int commitPulls(String userId, String bannerId, int totalCost,
                            List<Map<String, String>> pullResults) {
         Map<String, Object> request = Map.of(
-                "userId", userId,
-                "bannerId", bannerId,
-                "totalCost", totalCost,
-                "pullResults", pullResults
+                "user_id", userId,
+                "banner_id", bannerId,
+                "total_cost", totalCost,
+                "pull_results", pullResults
         );
 
         Map<String, Object> response = restClient.post()

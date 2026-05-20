@@ -34,7 +34,7 @@ public class AdminBannerController {
     private final BannerItemRepository bannerItemRepository;
     private final MarketplaceItemRepository marketplaceItemRepository;
 
-    @PostMapping("/api/admin/banners")
+    @PostMapping("/api/admin/gacha/banners")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<BannerDto> createBanner(@Valid @RequestBody CreateBannerRequest request) {
         Banner banner = Banner.builder()
@@ -42,8 +42,8 @@ public class AdminBannerController {
                 .name(request.name())
                 .description(request.description())
                 .bannerImageUrl(request.bannerImageUrl())
-                .startDate(request.startDate())
-                .endDate(request.endDate())
+                .startDate(request.startDate() != null ? request.startDate() : Instant.now())
+                .endDate(request.endDate() != null ? request.endDate() : Instant.now().plus(java.time.Duration.ofDays(365)))
                 .isActive(true)
                 .pullCostOne(request.pullCostOne() != null ? request.pullCostOne() : 5)
                 .pullCostTen(request.pullCostTen() != null ? request.pullCostTen() : 45)
@@ -52,7 +52,7 @@ public class AdminBannerController {
         return ResponseEntity.ok(BannerDto.from(banner));
     }
 
-    @PutMapping("/api/admin/banners/{id}")
+    @PutMapping("/api/admin/gacha/banners/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<BannerDto> updateBanner(
             @PathVariable String id,
@@ -73,14 +73,14 @@ public class AdminBannerController {
         return ResponseEntity.ok(BannerDto.from(banner));
     }
 
-    @DeleteMapping("/api/admin/banners/{id}")
+    @DeleteMapping("/api/admin/gacha/banners/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteBanner(@PathVariable String id) {
         bannerRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/api/admin/banners/{id}/items")
+    @PostMapping("/api/admin/gacha/banners/{id}/items")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> addItemToBanner(
             @PathVariable String id,
@@ -104,29 +104,29 @@ public class AdminBannerController {
 
     // Request records
     public record CreateBannerRequest(
-            @NotBlank String name,
-            String description,
-            String bannerImageUrl,
-            Instant startDate,
-            Instant endDate,
-            Integer pullCostOne,
-            Integer pullCostTen
+            @NotBlank @com.fasterxml.jackson.annotation.JsonProperty("name") String name,
+            @com.fasterxml.jackson.annotation.JsonProperty("description") String description,
+            @com.fasterxml.jackson.annotation.JsonProperty("banner_image_url") String bannerImageUrl,
+            @com.fasterxml.jackson.annotation.JsonProperty("start_date") Instant startDate,
+            @com.fasterxml.jackson.annotation.JsonProperty("end_date") Instant endDate,
+            @com.fasterxml.jackson.annotation.JsonProperty("pull_cost_one") Integer pullCostOne,
+            @com.fasterxml.jackson.annotation.JsonProperty("pull_cost_ten") Integer pullCostTen
     ) {}
 
     public record UpdateBannerRequest(
-            String name,
-            String description,
-            String bannerImageUrl,
-            Instant startDate,
-            Instant endDate,
-            Boolean isActive,
-            Integer pullCostOne,
-            Integer pullCostTen
+            @com.fasterxml.jackson.annotation.JsonProperty("name") String name,
+            @com.fasterxml.jackson.annotation.JsonProperty("description") String description,
+            @com.fasterxml.jackson.annotation.JsonProperty("banner_image_url") String bannerImageUrl,
+            @com.fasterxml.jackson.annotation.JsonProperty("start_date") Instant startDate,
+            @com.fasterxml.jackson.annotation.JsonProperty("end_date") Instant endDate,
+            @com.fasterxml.jackson.annotation.JsonProperty("is_active") Boolean isActive,
+            @com.fasterxml.jackson.annotation.JsonProperty("pull_cost_one") Integer pullCostOne,
+            @com.fasterxml.jackson.annotation.JsonProperty("pull_cost_ten") Integer pullCostTen
     ) {}
 
     public record AddBannerItemRequest(
-            @NotBlank String itemId,
-            Boolean isPoolExclusive,
-            Double dropRateWeight
+            @NotBlank @com.fasterxml.jackson.annotation.JsonProperty("item_id") String itemId,
+            @com.fasterxml.jackson.annotation.JsonProperty("is_pool_exclusive") Boolean isPoolExclusive,
+            @com.fasterxml.jackson.annotation.JsonProperty("drop_rate_weight") Double dropRateWeight
     ) {}
 }

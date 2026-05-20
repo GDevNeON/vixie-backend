@@ -29,6 +29,7 @@ import java.util.Map;
 public class GachaInternalController {
 
     private final GachaInternalService gachaInternalService;
+    private final com.neong.vixie.repositories.user.UserRepository userRepository;
 
     @Value("${vixie.internal.service-key:}")
     private String serviceKey;
@@ -42,7 +43,8 @@ public class GachaInternalController {
             @RequestParam String userId,
             @RequestParam String bannerId) {
         validateServiceKey(key);
-        int pity = gachaInternalService.getPityCount(userId, bannerId);
+        String realUserId = resolveUserId(userId);
+        int pity = gachaInternalService.getPityCount(realUserId, bannerId);
         return ResponseEntity.ok(Map.of("current_pity", pity));
     }
 
@@ -54,8 +56,9 @@ public class GachaInternalController {
             @RequestHeader("X-Service-Key") String key,
             @Valid @RequestBody CommitPullsRequest request) {
         validateServiceKey(key);
+        String realUserId = resolveUserId(request.userId());
         int newBalance = gachaInternalService.commitPulls(
-                request.userId(),
+                realUserId,
                 request.bannerId(),
                 request.totalCost(),
                 request.pullResults().stream()
@@ -72,6 +75,15 @@ public class GachaInternalController {
         if (serviceKey.isBlank() || !serviceKey.equals(key)) {
             throw new org.springframework.security.access.AccessDeniedException("Invalid service key");
         }
+    }
+
+    private String resolveUserId(String userIdOrEmail) {
+        if (userIdOrEmail.contains("@")) {
+            return userRepository.findByEmail(userIdOrEmail)
+                    .map(com.neong.vixie.models.db.User::getId)
+                    .orElse(userIdOrEmail);
+        }
+        return userIdOrEmail;
     }
 
     public record CommitPullsRequest(
