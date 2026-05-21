@@ -13,13 +13,16 @@ import com.neong.vixie.repository.CreatorSaleRecordRepository;
 import com.neong.vixie.repository.MarketplaceItemRepository;
 import com.neong.vixie.service.CloudinaryStorageService;
 import com.neong.vixie.service.CreatorService;
+import com.neong.vixie.service.MarketplaceService;
 import com.neong.vixie.service.ModelValidationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,6 +50,7 @@ import java.util.zip.ZipInputStream;
 public class CreatorController {
 
     private final CreatorService creatorService;
+    private final MarketplaceService marketplaceService;
     private final MarketplaceItemRepository marketplaceItemRepository;
     private final CreatorSaleRecordRepository saleRecordRepository;
     private final ModelValidationService modelValidationService;
@@ -225,5 +229,57 @@ public class CreatorController {
             baos.write(buffer, 0, len);
         }
         return baos.toByteArray();
+    }
+
+    /**
+     * Get all items uploaded by the current creator.
+     */
+    @GetMapping("/items")
+    public ResponseEntity<List<MarketplaceItemDto>> getItems(Principal principal) {
+        String userId = principal.getName();
+        CreatorProfile profile = creatorService.getByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Creator profile not found"));
+        return ResponseEntity.ok(marketplaceService.getCreatorItems(profile.getId()));
+    }
+
+    /**
+     * Publish an item.
+     */
+    @PutMapping("/items/{id}/publish")
+    public ResponseEntity<MarketplaceItemDto> publishItem(@PathVariable String id, Principal principal) {
+        String userId = principal.getName();
+        CreatorProfile profile = creatorService.getByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Creator profile not found"));
+        return ResponseEntity.ok(marketplaceService.publishItem(id, profile.getId()));
+    }
+
+    /**
+     * Unpublish an item.
+     */
+    @PutMapping("/items/{id}/unpublish")
+    public ResponseEntity<MarketplaceItemDto> unpublishItem(@PathVariable String id, Principal principal) {
+        String userId = principal.getName();
+        CreatorProfile profile = creatorService.getByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Creator profile not found"));
+        return ResponseEntity.ok(marketplaceService.unpublishItem(id, profile.getId()));
+    }
+
+    /**
+     * Update item metadata.
+     */
+    @PutMapping("/items/{id}")
+    public ResponseEntity<MarketplaceItemDto> updateItemMetadata(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> updates,
+            Principal principal) {
+        String userId = principal.getName();
+        CreatorProfile profile = creatorService.getByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Creator profile not found"));
+        
+        String name = updates.containsKey("name") ? (String) updates.get("name") : null;
+        String description = updates.containsKey("description") ? (String) updates.get("description") : null;
+        Integer priceCoins = updates.containsKey("priceCoins") ? (Integer) updates.get("priceCoins") : null;
+        
+        return ResponseEntity.ok(marketplaceService.updateItemMetadata(id, profile.getId(), name, description, priceCoins));
     }
 }
