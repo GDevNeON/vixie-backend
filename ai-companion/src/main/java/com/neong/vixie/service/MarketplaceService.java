@@ -3,6 +3,7 @@ package com.neong.vixie.service;
 import com.neong.vixie.dto.MarketplaceItemDto;
 import com.neong.vixie.model.ContentStatus;
 import com.neong.vixie.model.Rarity;
+import com.neong.vixie.model.MarketplaceItem;
 import com.neong.vixie.repository.MarketplaceItemRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

@@ -13,7 +13,8 @@ public record MarketplaceItemDto(
         Integer priceCoins,
         BigDecimal priceFiat,
         String thumbnailUrl,
-        String previewImageUrl
+        String previewImageUrl,
+        String status
 ) {
     public static MarketplaceItemDto from(MarketplaceItem item) {
         return new MarketplaceItemDto(
@@ -24,7 +25,8 @@ public record MarketplaceItemDto(
                 item.getPriceCoins(),
                 item.getPriceFiat(),
                 item.getThumbnailUrl(),
-                item.getPreviewImageUrl()
+                item.getPreviewImageUrl(),
+                item.getStatus().name()
         );
     }
 }

@@ -143,10 +143,10 @@ public class CoinWalletService {
             aiCompanionRestClient.post()
                     .uri("/api/internal/purchase-event")
                     .body(Map.of(
-                            "itemId", itemId,
-                            "buyerUserId", userId,
-                            "priceCoins", expectedPriceCoins,
-                            "purchasedAt", Instant.now().toString()
+                            "item_id", itemId,
+                            "buyer_user_id", userId,
+                            "price_coins", expectedPriceCoins,
+                            "purchased_at", Instant.now().toString()
                     ))
                     .retrieve()
                     .toBodilessEntity();

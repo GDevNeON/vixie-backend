@@ -25,7 +25,7 @@ import java.util.zip.ZipInputStream;
 @Slf4j
 public class ModelValidationService {
 
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * Validate a Live2D model zip file.
