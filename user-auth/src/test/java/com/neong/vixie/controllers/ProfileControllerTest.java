@@ -2,14 +2,17 @@ package com.neong.vixie.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.neong.vixie.controllers.user.ProfileController;
 import com.neong.vixie.helpers.api.GlobalExceptionHandler;
+import com.neong.vixie.models.constant.Gender;
 import com.neong.vixie.models.dto.UpdateAvatarRequest;
 import com.neong.vixie.models.dto.UpdateProfileRequest;
 import com.neong.vixie.models.dto.UserProfileResponse;
 import com.neong.vixie.services.user.ProfileService;
 import com.neong.vixie.services.user.UsernameConflictException;
 
+import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +48,7 @@ class ProfileControllerTest {
     void setUp() {
         objectMapper = new ObjectMapper();
         objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+        objectMapper.registerModule(new JavaTimeModule());
 
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         converter.setObjectMapper(objectMapper);
@@ -62,6 +66,13 @@ class ProfileControllerTest {
         );
     }
 
+    private UpdateProfileRequest validUpdateRequest(String username) {
+        return new UpdateProfileRequest(
+                username, "New Name", "New bio", "+84901234567",
+                Gender.OTHER, LocalDate.of(2000, 1, 1), "VN", "Ho Chi Minh"
+        );
+    }
+
     @Test
     void getProfile_returns200() throws Exception {
         when(profileService.getProfile(any())).thenReturn(sampleResponse());
@@ -76,9 +87,7 @@ class ProfileControllerTest {
     void updateProfile_validBody_returns200() throws Exception {
         when(profileService.updateProfile(any(), any())).thenReturn(sampleResponse());
 
-        UpdateProfileRequest request = new UpdateProfileRequest(
-                "newuser", "New Name", null, null, null, null, null, null
-        );
+        UpdateProfileRequest request = validUpdateRequest("newuser");
 
         mockMvc.perform(put("/api/users/me/profile")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -91,9 +100,7 @@ class ProfileControllerTest {
         when(profileService.updateProfile(any(), any()))
                 .thenThrow(new UsernameConflictException("taken_name"));
 
-        UpdateProfileRequest request = new UpdateProfileRequest(
-                "taken_name", null, null, null, null, null, null, null
-        );
+        UpdateProfileRequest request = validUpdateRequest("taken_name");
 
         mockMvc.perform(put("/api/users/me/profile")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -127,9 +134,7 @@ class ProfileControllerTest {
         when(profileService.updateProfile(any(), any()))
                 .thenThrow(new IllegalArgumentException("UNDERAGE"));
 
-        UpdateProfileRequest request = new UpdateProfileRequest(
-                null, null, null, null, null, null, null, null
-        );
+        UpdateProfileRequest request = validUpdateRequest("newuser");
 
         mockMvc.perform(put("/api/users/me/profile")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -8,6 +8,8 @@ CREATE TABLE notification_tokens (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_by VARCHAR(100),
     PRIMARY KEY (id),
     CONSTRAINT uk_notification_token_user_device UNIQUE (user_id, device_id)
 );
