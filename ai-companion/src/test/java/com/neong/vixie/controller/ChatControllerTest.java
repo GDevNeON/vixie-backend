@@ -7,6 +7,7 @@ import com.neong.vixie.repository.ConversationRepository;
 import com.neong.vixie.service.CharacterPromptService;
 import com.neong.vixie.service.GeminiService;
 import com.neong.vixie.service.MoodAndXpBatchService;
+import com.neong.vixie.service.OccasionExtractorService;
 import com.neong.vixie.service.SummarizationService;
 import com.neong.vixie.service.TtsService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,7 @@ class ChatControllerTest {
     @Mock private SummarizationService summarizationService;
     @Mock private MoodAndXpBatchService moodAndXpBatchService;
     @Mock private TtsService ttsService;
+    @Mock private OccasionExtractorService occasionExtractorService;
     @Mock private Principal principal;
 
     private ChatController controller;
@@ -46,7 +48,7 @@ class ChatControllerTest {
     void setUp() {
         controller = new ChatController(geminiService, messagingTemplate,
                 conversationRepository, characterPromptService, summarizationService,
-                moodAndXpBatchService, ttsService);
+                moodAndXpBatchService, ttsService, occasionExtractorService);
     }
 
     @Test
@@ -61,6 +63,7 @@ class ChatControllerTest {
 
         verify(conversationRepository).addMessage(eq("user_123"), eq("char_default"),
                 argThat(msg -> msg.role().equals("user") && msg.content().equals("Hello!")));
+        verify(occasionExtractorService).extractAsync("user_123", "Hello!");
     }
 
     @Test

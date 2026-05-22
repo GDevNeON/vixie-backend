@@ -8,6 +8,7 @@ import com.neong.vixie.repository.ConversationRepository;
 import com.neong.vixie.service.CharacterPromptService;
 import com.neong.vixie.service.MoodAndXpBatchService;
 import com.neong.vixie.service.GeminiService;
+import com.neong.vixie.service.OccasionExtractorService;
 import com.neong.vixie.service.SummarizationService;
 import com.neong.vixie.service.TtsService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class ChatController {
     private final SummarizationService summarizationService;
     private final MoodAndXpBatchService moodAndXpBatchService;
     private final TtsService ttsService;
+    private final OccasionExtractorService occasionExtractorService;
 
     @MessageMapping("/chat")
     public void handleChat(ChatRequestEnvelope request, Principal principal) {
@@ -59,6 +61,7 @@ public class ChatController {
         // 1. Save user message to conversation history
         conversationRepository.addMessage(userId, characterId,
                 ChatMessageDto.of("user", userMessage));
+        occasionExtractorService.extractAsync(userId, userMessage);
 
         // 2. Retrieve history for context
         List<ChatMessageDto> history = conversationRepository.getHistory(userId, characterId);

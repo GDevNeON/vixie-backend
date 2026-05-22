@@ -7,8 +7,11 @@ import com.neong.vixie.dto.NotificationEvent;
 import com.neong.vixie.dto.NotificationHistoryItem;
 import com.neong.vixie.model.NotificationPreferences;
 import com.neong.vixie.model.NotificationToken;
+import com.neong.vixie.model.OccasionType;
+import com.neong.vixie.model.UserOccasion;
 import com.neong.vixie.repository.NotificationPreferencesRepository;
 import com.neong.vixie.repository.NotificationTokenRepository;
+import com.neong.vixie.repository.UserOccasionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -31,6 +34,7 @@ public class NotificationDeliveryWorker {
     private final NotificationHistoryService notificationHistoryService;
     private final NotificationTokenRepository notificationTokenRepository;
     private final NotificationPreferencesRepository preferencesRepository;
+    private final UserOccasionRepository userOccasionRepository;
     private final GreetingService greetingService;
     private final StringRedisTemplate stringRedisTemplate;
 
@@ -74,6 +78,7 @@ public class NotificationDeliveryWorker {
                     "Sleep time",
                     "Time to rest! Goodnight."
             );
+            case NotificationEvent.OCCASION -> resolveOccasionContent(event);
             default -> new NotificationContent(
                     "Vixie notification",
                     "Your companion has something for you."
@@ -95,6 +100,25 @@ public class NotificationDeliveryWorker {
             return greeting;
         }
         return "Good morning! I'm glad to see you today.";
+    }
+
+    private NotificationContent resolveOccasionContent(NotificationEvent event) {
+        if (event.occasionId() == null) {
+            return new NotificationContent("Special day", "Your companion remembers today.");
+        }
+        return userOccasionRepository.findByIdAndUserId(event.occasionId(), event.userId())
+                .map(this::occasionContent)
+                .orElseGet(() -> new NotificationContent("Special day", "Your companion remembers today."));
+    }
+
+    private NotificationContent occasionContent(UserOccasion occasion) {
+        if (occasion.getType() == OccasionType.BIRTHDAY) {
+            return new NotificationContent("Happy birthday", "Happy birthday! Your companion is thinking of you today.");
+        }
+        if (occasion.getType() == OccasionType.ANNIVERSARY) {
+            return new NotificationContent("Happy anniversary", "Happy anniversary! Your companion remembers this special day.");
+        }
+        return new NotificationContent(occasion.getLabel(), "Today is %s. Your companion is thinking of you.".formatted(occasion.getLabel()));
     }
 
     private void sendFcm(String fcmToken, NotificationEvent event, NotificationContent content) {

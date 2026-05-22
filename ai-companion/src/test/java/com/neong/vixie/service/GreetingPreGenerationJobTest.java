@@ -3,6 +3,7 @@ package com.neong.vixie.service;
 import com.neong.vixie.dto.NotificationEvent;
 import com.neong.vixie.model.NotificationPreferences;
 import com.neong.vixie.repository.NotificationPreferencesRepository;
+import com.neong.vixie.repository.UserOccasionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.*;
 class GreetingPreGenerationJobTest {
 
     @Mock private NotificationPreferencesRepository preferencesRepository;
+    @Mock private UserOccasionRepository userOccasionRepository;
     @Mock private GreetingService greetingService;
     @Mock private NotificationDelayQueue notificationDelayQueue;
     @Mock private StringRedisTemplate stringRedisTemplate;
@@ -37,7 +39,8 @@ class GreetingPreGenerationJobTest {
     void setUp() {
         when(stringRedisTemplate.opsForValue()).thenReturn(valueOps);
         job = new GreetingPreGenerationJob(
-                preferencesRepository, greetingService, notificationDelayQueue, stringRedisTemplate);
+                preferencesRepository, userOccasionRepository, greetingService,
+                notificationDelayQueue, stringRedisTemplate);
     }
 
     @Test
@@ -51,6 +54,8 @@ class GreetingPreGenerationJobTest {
                 .timezone("UTC")
                 .build();
         when(preferencesRepository.findAll()).thenReturn(List.of(preferences));
+        when(userOccasionRepository.findByUserIdAndOccasionDateAndNotificationEnabledTrue(eq("user_123"), anyString()))
+                .thenReturn(List.of());
         when(greetingService.getDailyGreeting("user_123", "char_default"))
                 .thenReturn(Map.of("message", "Good morning"));
 

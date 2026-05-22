@@ -5,6 +5,7 @@ import com.neong.vixie.dto.NotificationHistoryItem;
 import com.neong.vixie.model.NotificationPreferences;
 import com.neong.vixie.repository.NotificationPreferencesRepository;
 import com.neong.vixie.repository.NotificationTokenRepository;
+import com.neong.vixie.repository.UserOccasionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +30,7 @@ class NotificationDeliveryWorkerTest {
     @Mock private NotificationHistoryService notificationHistoryService;
     @Mock private NotificationTokenRepository notificationTokenRepository;
     @Mock private NotificationPreferencesRepository preferencesRepository;
+    @Mock private UserOccasionRepository userOccasionRepository;
     @Mock private GreetingService greetingService;
     @Mock private StringRedisTemplate stringRedisTemplate;
     @Mock private ValueOperations<String, String> valueOps;
@@ -43,6 +45,7 @@ class NotificationDeliveryWorkerTest {
                 notificationHistoryService,
                 notificationTokenRepository,
                 preferencesRepository,
+                userOccasionRepository,
                 greetingService,
                 stringRedisTemplate
         );
