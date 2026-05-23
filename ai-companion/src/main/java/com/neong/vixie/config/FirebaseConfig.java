@@ -21,10 +21,8 @@ public class FirebaseConfig {
     @PostConstruct
     public void initFirebase() {
         if (FirebaseApp.getApps().isEmpty()) {
-            try {
-                FileInputStream serviceAccount =
-                        new FileInputStream("firebase-service-account.json");
-
+            try (FileInputStream serviceAccount =
+                         new FileInputStream("firebase-service-account.json")) {
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.fromStream(serviceAccount))
                         .build();

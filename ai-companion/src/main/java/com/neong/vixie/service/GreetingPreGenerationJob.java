@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.DateTimeException;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -38,32 +39,38 @@ public class GreetingPreGenerationJob {
     }
 
     private void scheduleDueRoutines(NotificationPreferences preferences) {
-        preferences.applyDefaults();
-        if (preferences.isGreetingEnabled()
-                && isOneHourFromNow(preferences.getGreetingTime(), preferences.getTimezone())) {
-            enqueueMatchingOccasions(preferences);
-            preGenerateGreeting(preferences);
-            enqueue(preferences, NotificationEvent.MORNING_GREETING);
-        }
-        if (preferences.isFocusEnabled()
-                && isOneHourFromNow(preferences.getFocusTime(), preferences.getTimezone())) {
-            enqueue(preferences, NotificationEvent.FOCUS);
-        }
-        if (preferences.isSleepEnabled()
-                && isOneHourFromNow(preferences.getSleepTime(), preferences.getTimezone())) {
-            enqueue(preferences, NotificationEvent.SLEEP);
+        try {
+            preferences.applyDefaults();
+            ZoneId zoneId = ZoneId.of(preferences.getTimezone());
+            if (preferences.isGreetingEnabled()
+                    && isOneHourFromNow(preferences.getGreetingTime(), zoneId)) {
+                enqueueMatchingOccasions(preferences, zoneId);
+                preGenerateGreeting(preferences);
+                enqueue(preferences, NotificationEvent.MORNING_GREETING, zoneId);
+            }
+            if (preferences.isFocusEnabled()
+                    && isOneHourFromNow(preferences.getFocusTime(), zoneId)) {
+                enqueue(preferences, NotificationEvent.FOCUS, zoneId);
+            }
+            if (preferences.isSleepEnabled()
+                    && isOneHourFromNow(preferences.getSleepTime(), zoneId)) {
+                enqueue(preferences, NotificationEvent.SLEEP, zoneId);
+            }
+        } catch (DateTimeException e) {
+            log.warn("Skipping notification routines for user={} character={} due to invalid timezone '{}'",
+                    preferences.getUserId(), preferences.getCharacterId(), preferences.getTimezone());
         }
     }
 
-    private void enqueueMatchingOccasions(NotificationPreferences preferences) {
-        String today = ZonedDateTime.now(ZoneId.of(preferences.getTimezone())).format(OCCASION_DATE);
+    private void enqueueMatchingOccasions(NotificationPreferences preferences, ZoneId zoneId) {
+        String today = ZonedDateTime.now(zoneId).format(OCCASION_DATE);
         userOccasionRepository
                 .findByUserIdAndOccasionDateAndNotificationEnabledTrue(preferences.getUserId(), today)
-                .forEach(occasion -> enqueueOccasion(preferences, occasion));
+                .forEach(occasion -> enqueueOccasion(preferences, occasion, zoneId));
     }
 
-    private void enqueueOccasion(NotificationPreferences preferences, UserOccasion occasion) {
-        long targetEpoch = ZonedDateTime.now(ZoneId.of(preferences.getTimezone()))
+    private void enqueueOccasion(NotificationPreferences preferences, UserOccasion occasion, ZoneId zoneId) {
+        long targetEpoch = ZonedDateTime.now(zoneId)
                 .plusHours(1)
                 .toEpochSecond();
         notificationDelayQueue.enqueue(new NotificationEvent(
@@ -75,11 +82,10 @@ public class GreetingPreGenerationJob {
         ));
     }
 
-    private boolean isOneHourFromNow(LocalTime routineTime, String timezone) {
+    private boolean isOneHourFromNow(LocalTime routineTime, ZoneId zoneId) {
         if (routineTime == null) {
             return false;
         }
-        ZoneId zoneId = ZoneId.of(timezone);
         ZonedDateTime targetWindow = ZonedDateTime.now(zoneId).plusHours(1);
         return routineTime.getHour() == targetWindow.getHour()
                 && routineTime.getMinute() == targetWindow.getMinute();
@@ -103,8 +109,8 @@ public class GreetingPreGenerationJob {
         }
     }
 
-    private void enqueue(NotificationPreferences preferences, String type) {
-        long targetEpoch = ZonedDateTime.now(ZoneId.of(preferences.getTimezone()))
+    private void enqueue(NotificationPreferences preferences, String type, ZoneId zoneId) {
+        long targetEpoch = ZonedDateTime.now(zoneId)
                 .plusHours(1)
                 .toEpochSecond();
         notificationDelayQueue.enqueue(new NotificationEvent(

@@ -23,11 +23,13 @@ public class RedisConfig {
      * Used by ConversationRepository for storing ChatMessageDto objects.
      */
     @Bean
-    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+    public RedisTemplate<String, Object> redisTemplate(
+            RedisConnectionFactory connectionFactory,
+            ObjectMapper objectMapper) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
         
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = objectMapper.copy();
         mapper.registerModule(new JavaTimeModule());
         GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(mapper);
         

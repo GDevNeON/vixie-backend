@@ -52,7 +52,7 @@ class NotificationDeliveryWorkerTest {
     }
 
     @Test
-    void deliverDueNotifications_recordsHistoryAndRequeuesDailyEvent() {
+    void deliverDueNotifications_recordsHistoryWithoutRequeueingDailyEvent() {
         long epoch8AM = java.time.LocalDate.of(2025, 1, 1).atTime(8, 0).toEpochSecond(java.time.ZoneOffset.UTC);
         NotificationEvent event = new NotificationEvent(
                 "user_123", "char_default", NotificationEvent.MORNING_GREETING, epoch8AM, null);
@@ -80,10 +80,7 @@ class NotificationDeliveryWorkerTest {
         assertEquals(NotificationEvent.MORNING_GREETING, historyCaptor.getValue().type());
         assertEquals("Good morning", historyCaptor.getValue().body());
 
-        ArgumentCaptor<NotificationEvent> requeueCaptor = ArgumentCaptor.forClass(NotificationEvent.class);
-        verify(notificationDelayQueue).enqueue(requeueCaptor.capture());
-        assertEquals(NotificationEvent.MORNING_GREETING, requeueCaptor.getValue().type());
-        assertTrue(requeueCaptor.getValue().targetTimeEpoch() > event.targetTimeEpoch());
+        verify(notificationDelayQueue, never()).enqueue(any(NotificationEvent.class));
         verify(greetingService, never()).getDailyGreeting(anyString(), anyString(), any());
     }
 }

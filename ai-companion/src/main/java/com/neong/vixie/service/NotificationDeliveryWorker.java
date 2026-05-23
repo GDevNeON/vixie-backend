@@ -40,7 +40,14 @@ public class NotificationDeliveryWorker {
 
     @Scheduled(fixedDelay = 60000)
     public void deliverDueNotifications() {
-        notificationDelayQueue.pollDueEvents().forEach(this::deliver);
+        notificationDelayQueue.pollDueEvents().forEach(event -> {
+            try {
+                deliver(event);
+            } catch (Exception e) {
+                log.warn("Notification delivery failed for user={} character={} type={}: {}",
+                        event.userId(), event.characterId(), event.type(), e.getMessage());
+            }
+        });
     }
 
     private void deliver(NotificationEvent event) {
@@ -78,7 +85,6 @@ public class NotificationDeliveryWorker {
                 Instant.now(),
                 false
         ));
-        requeueDaily(event);
     }
 
     private NotificationContent resolveContent(NotificationEvent event) {
@@ -154,16 +160,6 @@ public class NotificationDeliveryWorker {
             log.warn("FCM send failed for user={} character={}: {}",
                     event.userId(), event.characterId(), e.getMessage());
         }
-    }
-
-    private void requeueDaily(NotificationEvent event) {
-        if (!isDailyRoutine(event.type())) {
-            return;
-        }
-
-        preferencesRepository.findByUserIdAndCharacterId(event.userId(), event.characterId())
-                .map(preferences -> nextDailyEvent(preferences, event.type()))
-                .ifPresent(notificationDelayQueue::enqueue);
     }
 
     private boolean isDailyRoutine(String type) {
