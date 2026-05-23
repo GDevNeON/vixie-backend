@@ -84,6 +84,6 @@ class NotificationDeliveryWorkerTest {
         verify(notificationDelayQueue).enqueue(requeueCaptor.capture());
         assertEquals(NotificationEvent.MORNING_GREETING, requeueCaptor.getValue().type());
         assertTrue(requeueCaptor.getValue().targetTimeEpoch() > event.targetTimeEpoch());
-        verify(greetingService, never()).getDailyGreeting(anyString(), anyString());
+        verify(greetingService, never()).getDailyGreeting(anyString(), anyString(), any());
     }
 }

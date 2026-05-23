@@ -111,7 +111,7 @@ public class NotificationDeliveryWorker {
         }
 
         Map<String, Object> result = greetingService.getDailyGreeting(
-                event.userId(), event.characterId());
+                event.userId(), event.characterId(), null);
         Object message = result.get("message");
         if (message instanceof String greeting && !greeting.isBlank()) {
             return greeting;

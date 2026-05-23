@@ -56,7 +56,7 @@ class GreetingPreGenerationJobTest {
         when(preferencesRepository.findAll()).thenReturn(List.of(preferences));
         when(userOccasionRepository.findByUserIdAndOccasionDateAndNotificationEnabledTrue(eq("user_123"), anyString()))
                 .thenReturn(List.of());
-        when(greetingService.getDailyGreeting("user_123", "char_default"))
+        when(greetingService.getDailyGreeting(eq("user_123"), eq("char_default"), any()))
                 .thenReturn(Map.of("message", "Good morning"));
 
         job.run();

@@ -45,8 +45,9 @@ public class GreetingService {
      *         If already greeted today, returns {"greeted": true}.
      *         If first time today, generates and returns {"greeted": false, "message": "..."}.
      */
-    public Map<String, Object> getDailyGreeting(String userId, String characterId) {
-        String today = LocalDate.now(ZoneOffset.UTC).format(DATE_FMT);
+    public Map<String, Object> getDailyGreeting(String userId, String characterId, Integer timezoneOffset) {
+        ZoneOffset offset = timezoneOffset != null ? ZoneOffset.ofTotalSeconds(timezoneOffset * 60) : ZoneOffset.UTC;
+        String today = LocalDate.now(offset).format(DATE_FMT);
         String greetedKey = String.format("vixie:user:%s:greeted:%s", userId, today);
         String greetingKey = String.format("vixie:user:%s:greeting:%s", userId, today);
 
@@ -64,7 +65,7 @@ public class GreetingService {
 
         // Generate new greeting
         try {
-            String greeting = generateGreeting(userId, characterId);
+            String greeting = generateGreeting(userId, characterId, offset);
 
             // Cache greeting and set greeted flag
             stringRedisTemplate.opsForValue().set(greetingKey, greeting, GREETING_TTL);
@@ -76,17 +77,17 @@ public class GreetingService {
             log.warn("Daily greeting generation failed for user={}: {}", userId, e.getMessage());
 
             // Fallback to template greeting
-            String fallback = generateFallbackGreeting(userId, characterId);
+            String fallback = generateFallbackGreeting(userId, characterId, offset);
             stringRedisTemplate.opsForValue().set(greetedKey, "true", GREETING_TTL);
 
             return Map.of("greeted", false, "message", fallback);
         }
     }
 
-    private String generateGreeting(String userId, String characterId) {
+    private String generateGreeting(String userId, String characterId, ZoneOffset offset) {
         CharacterEntity character = characterRepository.findById(characterId).orElse(null);
         String characterName = character != null ? character.getName() : "Hana";
-        String timeOfDay = getTimeOfDayBucket();
+        String timeOfDay = getTimeOfDayBucket(offset);
         String relationshipTier = getRelationshipTier(userId, characterId);
 
         String prompt = String.format(
@@ -101,10 +102,10 @@ public class GreetingService {
         ));
     }
 
-    private String generateFallbackGreeting(String userId, String characterId) {
+    private String generateFallbackGreeting(String userId, String characterId, ZoneOffset offset) {
         CharacterEntity character = characterRepository.findById(characterId).orElse(null);
         String characterName = character != null ? character.getName() : "Hana";
-        String timeOfDay = getTimeOfDayBucket();
+        String timeOfDay = getTimeOfDayBucket(offset);
 
         return String.format("Good %s! I'm glad to see you today~ How are you doing? 💕",
                 timeOfDay);
@@ -126,8 +127,8 @@ public class GreetingService {
         };
     }
 
-    private String getTimeOfDayBucket() {
-        int hour = LocalTime.now(ZoneOffset.UTC).getHour();
+    private String getTimeOfDayBucket(ZoneOffset offset) {
+        int hour = LocalTime.now(offset).getHour();
         if (hour >= 6 && hour < 12) return "morning";
         if (hour >= 12 && hour < 17) return "afternoon";
         if (hour >= 17 && hour < 22) return "evening";

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
@@ -37,6 +38,7 @@ public class GreetingController {
     @GetMapping("/{characterId}/greeting/daily")
     public ResponseEntity<Map<String, Object>> getDailyGreeting(
             @PathVariable String characterId,
+            @RequestParam(required = false) Integer timezoneOffset,
             Principal principal) {
 
         if (principal == null) {
@@ -44,7 +46,7 @@ public class GreetingController {
         }
 
         Map<String, Object> result = greetingService.getDailyGreeting(
-                principal.getName(), characterId);
+                principal.getName(), characterId, timezoneOffset);
 
         return ResponseEntity.ok(result);
     }

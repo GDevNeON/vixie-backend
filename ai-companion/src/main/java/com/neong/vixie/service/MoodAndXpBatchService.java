@@ -96,12 +96,16 @@ public class MoodAndXpBatchService {
             // Check if mood actually changed before emitting (prevents expression flickering)
             String previousMood = moodService.getCurrentMood(userId);
 
-            // Update mood in Redis
-            moodService.setCurrentMood(userId, mood);
-            log.info("Batch analysis: mood={} xpDelta={} for user={}", mood, xpDelta, userId);
+            if (!mood.equals(previousMood)) {
+                // Update mood in Redis
+                moodService.setCurrentMood(userId, mood);
+                log.info("Batch analysis: mood={} xpDelta={} for user={}", mood, xpDelta, userId);
 
-            // Emit STOMP emotion event (Frontend handles deduplication)
-            emitEmotionEvent(userId, mood);
+                // Emit STOMP emotion event (Frontend handles deduplication)
+                emitEmotionEvent(userId, mood);
+            } else {
+                log.debug("Batch analysis: mood unchanged ({}) for user={}", mood, userId);
+            }
 
             // Update relationship XP in Postgres
             updateRelationshipXp(userId, characterId, xpDelta);

@@ -88,7 +88,7 @@ public class GreetingPreGenerationJob {
     private void preGenerateGreeting(NotificationPreferences preferences) {
         try {
             Map<String, Object> result = greetingService.getDailyGreeting(
-                    preferences.getUserId(), preferences.getCharacterId());
+                    preferences.getUserId(), preferences.getCharacterId(), null);
             Object message = result.get("message");
             if (message instanceof String greeting && !greeting.isBlank()) {
                 stringRedisTemplate.opsForValue().set(

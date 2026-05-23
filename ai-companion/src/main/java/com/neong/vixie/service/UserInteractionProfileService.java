@@ -157,6 +157,7 @@ public class UserInteractionProfileService {
     }
 
     private List<String> parseJsonArray(String json) {
+        if (json == null) return new ArrayList<>();
         try {
             return new ArrayList<>(objectMapper.readValue(json, new TypeReference<List<String>>() {}));
         } catch (JsonProcessingException e) {
@@ -165,6 +166,7 @@ public class UserInteractionProfileService {
     }
 
     private List<Integer> parseJsonIntArray(String json) {
+        if (json == null) return new ArrayList<>();
         try {
             return new ArrayList<>(objectMapper.readValue(json, new TypeReference<List<Integer>>() {}));
         } catch (JsonProcessingException e) {
