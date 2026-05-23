@@ -110,7 +110,6 @@ public class ChatController {
                                 // 7. Trigger mood+XP analysis on every message
                                 List<ChatMessageDto> currentHistory =
                                         conversationRepository.getHistory(userId, characterId);
-                                        
                                 // Take the last 6 messages (user + assistant history) for analysis
                                 List<ChatMessageDto> recentMessages = currentHistory.subList(
                                         Math.max(0, currentHistory.size() - 6),
@@ -122,14 +121,14 @@ public class ChatController {
                                 // 8. Emit TTS trigger to /user/queue/tts
                                 TtsTriggerPayload ttsPayload = ttsService.generateTtsPayload(
                                         fullResponse.toString(), characterId);
+
                                 if (ttsPayload != null) {
                                     messagingTemplate.convertAndSendToUser(
                                             userId,
                                             "/queue/tts",
                                             ttsPayload
                                     );
-                                    log.info("TTS trigger emitted for user={}, voiceId={}",
-                                            userId, ttsPayload.voiceId());
+                                    log.info("TTS trigger emitted for user={}", userId);
                                 }
                             }
                             log.info("Chat response complete for user={}, length={}",

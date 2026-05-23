@@ -1,6 +1,6 @@
 package com.neong.vixie.controller;
 
-import com.neong.vixie.dto.TtsTriggerPayload;
+
 import com.neong.vixie.service.TtsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,12 +21,10 @@ public class VoiceController {
     private final TtsService ttsService;
 
     /**
-     * Returns the voice configuration for testing a character's voice.
-     * Frontend uses this to call ElevenLabs directly with a sample phrase.
+     * Proxy TTS stream from ElevenLabs to the client.
      */
-    @GetMapping("/{id}/voice/test")
-    public ResponseEntity<TtsTriggerPayload> testVoice(@PathVariable String id) {
-        TtsTriggerPayload payload = ttsService.generateTestPayload(id);
-        return ResponseEntity.ok(payload);
+    @org.springframework.web.bind.annotation.PostMapping("/{id}/voice/stream")
+    public ResponseEntity<String> streamVoice(@PathVariable String id, @org.springframework.web.bind.annotation.RequestBody com.neong.vixie.dto.TtsStreamRequest request) {
+        return ttsService.streamTts(id, request.text());
     }
 }

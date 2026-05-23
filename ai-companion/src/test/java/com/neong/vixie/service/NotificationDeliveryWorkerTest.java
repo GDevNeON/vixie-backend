@@ -53,8 +53,9 @@ class NotificationDeliveryWorkerTest {
 
     @Test
     void deliverDueNotifications_recordsHistoryAndRequeuesDailyEvent() {
+        long epoch8AM = java.time.LocalDate.of(2025, 1, 1).atTime(8, 0).toEpochSecond(java.time.ZoneOffset.UTC);
         NotificationEvent event = new NotificationEvent(
-                "user_123", "char_default", NotificationEvent.MORNING_GREETING, 12345L, null);
+                "user_123", "char_default", NotificationEvent.MORNING_GREETING, epoch8AM, null);
         NotificationPreferences preferences = NotificationPreferences.builder()
                 .userId("user_123")
                 .characterId("char_default")

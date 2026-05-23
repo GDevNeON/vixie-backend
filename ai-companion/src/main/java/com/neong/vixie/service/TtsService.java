@@ -38,18 +38,13 @@ public class TtsService {
             return null;
         }
 
-        return new TtsTriggerPayload(
-                fullText,
-                character.getElevenlabsVoiceId(),
-                elevenlabsApiKey
-        );
+        return new TtsTriggerPayload(fullText);
     }
 
     /**
-     * Generate a test voice payload for the given character (used by VoiceController).
-     * Returns null if the character has no voice configured.
+     * Proxy TTS request to ElevenLabs stream endpoint.
      */
-    public TtsTriggerPayload generateTestPayload(String characterId) {
+    public org.springframework.http.ResponseEntity<String> streamTts(String characterId, String text) {
         if (elevenlabsApiKey == null || elevenlabsApiKey.isBlank()) {
             throw new IllegalStateException("ElevenLabs API key not configured");
         }
@@ -61,10 +56,28 @@ public class TtsService {
             throw new IllegalStateException("Character " + characterId + " has no voice configured");
         }
 
-        return new TtsTriggerPayload(
-                null, // No text for test — frontend provides its own sample text
-                character.getElevenlabsVoiceId(),
-                elevenlabsApiKey
-        );
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        headers.set("xi-api-key", elevenlabsApiKey);
+        
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        body.put("text", text);
+        body.put("model_id", "eleven_multilingual_v2");
+        java.util.Map<String, Object> voiceSettings = new java.util.HashMap<>();
+        voiceSettings.put("stability", 0.5);
+        voiceSettings.put("similarity_boost", 0.75);
+        body.put("voice_settings", voiceSettings);
+        
+        org.springframework.http.HttpEntity<java.util.Map<String, Object>> entity = new org.springframework.http.HttpEntity<>(body, headers);
+        
+        String url = "https://api.elevenlabs.io/v1/text-to-speech/" + character.getElevenlabsVoiceId() + "/stream/with-timestamps";
+        
+        try {
+            return restTemplate.postForEntity(url, entity, String.class);
+        } catch (org.springframework.web.client.HttpStatusCodeException e) {
+            log.error("ElevenLabs API returned error: {}", e.getResponseBodyAsString());
+            return org.springframework.http.ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+        }
     }
 }

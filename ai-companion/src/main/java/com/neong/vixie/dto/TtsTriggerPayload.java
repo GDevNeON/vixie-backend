@@ -5,8 +5,6 @@ package com.neong.vixie.dto;
  * Flutter receives this after AI response completes and calls ElevenLabs directly.
  */
 public record TtsTriggerPayload(
-        String text,
-        String voiceId,
-        String token
+        String text
 ) {
 }

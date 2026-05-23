@@ -45,7 +45,12 @@ public class UserPreferencesController {
             @AuthenticationPrincipal User user,
             @RequestBody VoicePreferencesDto request) {
         UserPreferences prefs = userPreferencesRepository.findByUserId(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("User preferences not found"));
+                .orElseGet(() -> {
+                    UserPreferences newPrefs = new UserPreferences();
+                    newPrefs.setId(com.neong.vixie.helpers.api.IdGenerator.generateId("preference"));
+                    newPrefs.setUser(user);
+                    return newPrefs;
+                });
 
         if (request.voiceMuted() != null) {
             prefs.setVoiceMuted(request.voiceMuted());
