@@ -7,12 +7,15 @@ import com.neong.vixie.model.UserInteractionProfile;
 import com.neong.vixie.repository.CharacterPersonalityRepository;
 import com.neong.vixie.repository.CharacterRepository;
 import com.neong.vixie.repository.RelationshipStateRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 /**
  * Builds character-specific system prompts for OpenAI conversations.
@@ -33,6 +36,7 @@ public class CharacterPromptService {
     private final RelationshipStateRepository relationshipStateRepository;
     private final MoodService moodService;
     private final UserInteractionProfileService profileService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Build a system prompt for the given character.
@@ -164,9 +168,16 @@ public class CharacterPromptService {
             else if (avgLen < 30) lengthPref = "medium";
             else lengthPref = "long";
 
-            String topics = profile.getTopTopics();
-            // Strip JSON array brackets for readability
-            topics = topics.replaceAll("[\\[\\]\"]", "");
+            String topicsRaw = profile.getTopTopics();
+            String topics = "";
+            if (topicsRaw != null && !topicsRaw.isEmpty()) {
+                try {
+                    List<String> topicList = objectMapper.readValue(topicsRaw, new TypeReference<List<String>>() {});
+                    topics = String.join(", ", topicList);
+                } catch (Exception ex) {
+                    topics = topicsRaw.replaceAll("[\\[\\]\"]", "");
+                }
+            }
 
             StringBuilder sb = new StringBuilder();
             sb.append(String.format(

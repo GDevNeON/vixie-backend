@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
+import java.util.Map;
 
 /**
  * REST controller for user preferences.
@@ -36,6 +37,16 @@ public class UserPreferencesController {
         String userId = principal.getName();
         userPreferencesService.setActiveCharacter(userId, request.characterId());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/active-character")
+    public ResponseEntity<Map<String, String>> getActiveCharacter(Principal principal) {
+        String userId = principal.getName();
+        String characterId = userPreferencesService.getActiveCharacterId(userId);
+        if (characterId == null) {
+            return ResponseEntity.ok(Map.of());
+        }
+        return ResponseEntity.ok(Map.of("character_id", characterId));
     }
 
     @GetMapping("/voice")

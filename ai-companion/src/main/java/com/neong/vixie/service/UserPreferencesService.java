@@ -5,6 +5,7 @@ import com.neong.vixie.repository.CharacterRepository;
 import com.neong.vixie.repository.UserPreferencesRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -21,6 +22,7 @@ public class UserPreferencesService {
     /**
      * Set the user's active character. Validates character exists first.
      */
+    @Transactional
     public void setActiveCharacter(String userId, String characterId) {
         // Validate character exists
         characterRepository.findById(characterId)
@@ -62,6 +64,7 @@ public class UserPreferencesService {
     /**
      * Patch voice preferences. Only non-null fields are updated (partial update).
      */
+    @Transactional
     public void patchVoicePreferences(String userId, Boolean voiceMuted, Double voiceVolume) {
         UserPreferences preferences = getOrCreatePreferences(userId);
 

@@ -7,7 +7,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,7 @@ public class MoodAndXpBatchService {
     private final MoodService moodService;
     private final RelationshipStateRepository relationshipStateRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final TransactionTemplate transactionTemplate;
 
     private static final String ANALYSIS_PROMPT =
             "Analyze the tone of these recent messages. " +
@@ -131,7 +134,8 @@ public class MoodAndXpBatchService {
     private void updateRelationshipXp(String userId, String characterId, int xpDelta) {
         if (xpDelta <= 0) return;
 
-        RelationshipState state = relationshipStateRepository
+        transactionTemplate.executeWithoutResult(status -> {
+            RelationshipState state = relationshipStateRepository
                 .findByUserIdAndCharacterId(userId, characterId)
                 .orElseGet(() -> {
                     RelationshipState newState = RelationshipState.builder()
@@ -160,5 +164,6 @@ public class MoodAndXpBatchService {
         }
 
         relationshipStateRepository.save(state);
+        });
     }
 }

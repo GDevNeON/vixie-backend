@@ -11,6 +11,7 @@ import com.neong.vixie.repository.CharacterRepository;
 import com.neong.vixie.repository.RelationshipStateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ public class CharacterService {
     /**
      * Get the user-specific state for a character (mood, relationship, personality settings).
      */
+    @Transactional
     public CharacterStateResponse getCharacterState(String userId, String characterId) {
         // Ensure character exists
         CharacterEntity character = characterRepository.findById(characterId)
@@ -92,6 +94,7 @@ public class CharacterService {
     /**
      * Update personality settings for a user-character pair.
      */
+    @Transactional
     public void updatePersonality(String userId, String characterId, PersonalityPatchRequest request) {
         // Ensure character exists
         characterRepository.findById(characterId)
