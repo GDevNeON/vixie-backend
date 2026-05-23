@@ -14,8 +14,12 @@ import com.neong.vixie.repositories.UserInventoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.time.Instant;
@@ -31,6 +35,9 @@ public class CoinWalletService {
     private final CoinTransactionRepository transactionRepository;
     private final UserInventoryRepository inventoryRepository;
     private final RestClient aiCompanionRestClient;
+
+    @Value("${api.internal.key:default-internal-key-123}")
+    private String internalApiKey;
 
     /**
      * Get or create wallet for user. Creates with 0 balance if not exists.
@@ -82,6 +89,9 @@ public class CoinWalletService {
                     .uri("/api/marketplace/items/{id}", itemId)
                     .retrieve()
                     .body(Map.class);
+        } catch (HttpClientErrorException.NotFound e) {
+            log.error("Item not found: {}", itemId);
+            throw new IllegalArgumentException("Item not found: " + itemId);
         } catch (Exception e) {
             log.error("Failed to validate item {} from ai-companion", itemId, e);
             throw new IllegalArgumentException("Unable to validate item. Please try again.");
@@ -139,21 +149,27 @@ public class CoinWalletService {
 
         // Fire-and-forget: notify ai-companion for creator revenue tracking
         // This MUST NOT rollback the purchase if it fails
-        try {
-            aiCompanionRestClient.post()
-                    .uri("/api/internal/purchase-event")
-                    .body(Map.of(
-                            "item_id", itemId,
-                            "buyer_user_id", userId,
-                            "price_coins", expectedPriceCoins,
-                            "purchased_at", Instant.now().toString()
-                    ))
-                    .retrieve()
-                    .toBodilessEntity();
-            log.info("Purchase event sent to ai-companion for item {}", itemId);
-        } catch (Exception e) {
-            log.warn("Fire-and-forget purchase event failed for item {}: {}", itemId, e.getMessage());
-        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    aiCompanionRestClient.post()
+                            .uri("/api/internal/purchase-event")
+                            .header("X-Service-Key", internalApiKey)
+                            .body(Map.of(
+                                    "item_id", itemId,
+                                    "buyer_user_id", userId,
+                                    "price_coins", expectedPriceCoins,
+                                    "purchased_at", Instant.now().toString()
+                            ))
+                            .retrieve()
+                            .toBodilessEntity();
+                    log.info("Purchase event sent to ai-companion for item {}", itemId);
+                } catch (Exception e) {
+                    log.warn("Fire-and-forget purchase event failed for item {}: {}", itemId, e.getMessage());
+                }
+            }
+        });
 
         return new PurchaseResponse(true, wallet.getBalance(), itemId);
     }
@@ -161,12 +177,17 @@ public class CoinWalletService {
     private CoinWallet getOrCreateWallet(String userId) {
         return walletRepository.findById(userId)
                 .orElseGet(() -> {
-                    CoinWallet newWallet = CoinWallet.builder()
-                            .userId(userId)
-                            .balance(0)
-                            .createdAt(Instant.now())
-                            .build();
-                    return walletRepository.save(newWallet);
+                    try {
+                        CoinWallet newWallet = CoinWallet.builder()
+                                .userId(userId)
+                                .balance(0)
+                                .createdAt(Instant.now())
+                                .build();
+                        return walletRepository.save(newWallet);
+                    } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        return walletRepository.findById(userId)
+                                .orElseThrow(() -> new IllegalStateException("Failed to retrieve wallet after creation collision"));
+                    }
                 });
     }
 }
