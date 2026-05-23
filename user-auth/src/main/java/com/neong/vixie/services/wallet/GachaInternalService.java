@@ -62,7 +62,7 @@ public class GachaInternalService {
     public int commitPulls(String userId, String bannerId, int totalCost,
                            List<PullResultEntry> pullResults) {
         // 1. Deduct coins
-        CoinWallet wallet = walletRepository.findById(userId)
+        CoinWallet wallet = walletRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new InsufficientFundsException(0, totalCost));
 
         if (wallet.getBalance() < totalCost) {
@@ -85,7 +85,7 @@ public class GachaInternalService {
         transactionRepository.save(tx);
 
         // 3. Process each pull result
-        GachaPityTracker pity = pityRepository.findByUser_IdAndBannerId(userId, bannerId)
+        GachaPityTracker pity = pityRepository.findByUser_IdAndBannerIdForUpdate(userId, bannerId)
                 .orElseGet(() -> {
                     GachaPityTracker newPity = GachaPityTracker.builder()
                             .id(IdGenerator.generateId("pity"))

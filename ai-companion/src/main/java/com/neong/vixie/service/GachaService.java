@@ -51,6 +51,7 @@ public class GachaService {
     private final BannerRepository bannerRepository;
     private final BannerItemRepository bannerItemRepository;
     private final UserAuthClient userAuthClient;
+    private final org.springframework.data.redis.core.StringRedisTemplate redisTemplate;
 
     /**
      * Get active banners.
@@ -81,64 +82,75 @@ public class GachaService {
             throw new IllegalArgumentException("Pull count must be 1 or 10");
         }
 
-        Banner banner = getBannerById(bannerId);
-        if (!Boolean.TRUE.equals(banner.getIsActive())) {
-            throw new IllegalArgumentException("Banner is not active");
-        }
-        if (Instant.now().isBefore(banner.getStartDate()) || Instant.now().isAfter(banner.getEndDate())) {
-            throw new IllegalArgumentException("Banner is not within active date range");
+        String lockKey = "gacha:lock:" + userId;
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "1", java.time.Duration.ofSeconds(10));
+        if (acquired == null || !acquired) {
+            throw new IllegalStateException("Please wait for your previous pull to complete");
         }
 
-        int totalCost = count == 1 ? banner.getPullCostOne() : banner.getPullCostTen();
-
-        // Get pool items grouped by rarity
-        List<BannerItem> poolItems = bannerItemRepository.findByBanner_Id(bannerId);
-        if (poolItems.isEmpty()) {
-            throw new IllegalArgumentException("Banner has no items in pool");
-        }
-
-        Map<Rarity, List<BannerItem>> itemsByRarity = poolItems.stream()
-                .collect(Collectors.groupingBy(bi -> bi.getItem().getRarity()));
-
-        boolean hasLimited = itemsByRarity.containsKey(Rarity.LIMITED);
-
-        // Get current pity
-        int currentPity = userAuthClient.getPityCount(userId, bannerId);
-
-        // Roll items
-        List<PullResultItem> results = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            currentPity++;
-            Rarity rolledRarity = rollRarity(currentPity, hasLimited);
-
-            // If rolled rarity has no items in pool, downgrade to COMMON
-            if (!itemsByRarity.containsKey(rolledRarity) || itemsByRarity.get(rolledRarity).isEmpty()) {
-                rolledRarity = Rarity.COMMON;
+        try {
+            Banner banner = getBannerById(bannerId);
+            if (!Boolean.TRUE.equals(banner.getIsActive())) {
+                throw new IllegalArgumentException("Banner is not active");
+            }
+            if (Instant.now().isBefore(banner.getStartDate()) || Instant.now().isAfter(banner.getEndDate())) {
+                throw new IllegalArgumentException("Banner is not within active date range");
             }
 
-            BannerItem selectedItem = selectItemFromRarity(itemsByRarity.get(rolledRarity));
-            MarketplaceItem item = selectedItem.getItem();
+            int totalCost = count == 1 ? banner.getPullCostOne() : banner.getPullCostTen();
 
-            boolean isNew = true; // will be determined server-side during commit
-            results.add(new PullResultItem(item.getId(), item.getName(),
-                    item.getRarity().name(), item.getThumbnailUrl(), isNew));
-
-            // Track pity locally for multi-pull accuracy
-            if (rolledRarity == Rarity.EPIC) {
-                currentPity = 0;
-            } else if (rolledRarity != Rarity.LIMITED) {
-                // Limited doesn't affect pity
+            // Get pool items grouped by rarity
+            List<BannerItem> poolItems = bannerItemRepository.findByBanner_Id(bannerId);
+            if (poolItems.isEmpty()) {
+                throw new IllegalArgumentException("Banner has no items in pool");
             }
+
+            Map<Rarity, List<BannerItem>> itemsByRarity = poolItems.stream()
+                    .collect(Collectors.groupingBy(bi -> bi.getItem().getRarity()));
+
+            boolean hasLimited = itemsByRarity.containsKey(Rarity.LIMITED);
+
+            // Get current pity
+            int currentPity = userAuthClient.getPityCount(userId, bannerId);
+
+            // Roll items
+            List<PullResultItem> results = new ArrayList<>();
+            for (int i = 0; i < count; i++) {
+                currentPity++;
+                Rarity rolledRarity = rollRarity(currentPity, hasLimited);
+
+                // If rolled rarity has no items in pool, downgrade to COMMON
+                if (!itemsByRarity.containsKey(rolledRarity) || itemsByRarity.get(rolledRarity).isEmpty()) {
+                    rolledRarity = Rarity.COMMON;
+                }
+
+                BannerItem selectedItem = selectItemFromRarity(itemsByRarity.get(rolledRarity));
+                MarketplaceItem item = selectedItem.getItem();
+
+                boolean isNew = true; // will be determined server-side during commit
+                String rarityName = item.getRarity() != null ? item.getRarity().name() : Rarity.COMMON.name();
+                results.add(new PullResultItem(item.getId(), item.getName(),
+                        rarityName, item.getThumbnailUrl(), isNew));
+
+                // Track pity locally for multi-pull accuracy
+                if (rolledRarity == Rarity.EPIC) {
+                    currentPity = 0;
+                } else if (rolledRarity != Rarity.LIMITED) {
+                    // Limited doesn't affect pity
+                }
+            }
+
+            // Commit to user-auth (deduct coins, add inventory, update pity)
+            List<Map<String, String>> commitEntries = results.stream()
+                    .map(r -> Map.of("item_id", r.itemId(), "rarity", r.rarity()))
+                    .toList();
+
+            int newBalance = userAuthClient.commitPulls(userId, bannerId, totalCost, commitEntries);
+
+            return new PullResponse(results, newBalance, totalCost);
+        } finally {
+            redisTemplate.delete(lockKey);
         }
-
-        // Commit to user-auth (deduct coins, add inventory, update pity)
-        List<Map<String, String>> commitEntries = results.stream()
-                .map(r -> Map.of("item_id", r.itemId(), "rarity", r.rarity()))
-                .toList();
-
-        int newBalance = userAuthClient.commitPulls(userId, bannerId, totalCost, commitEntries);
-
-        return new PullResponse(results, newBalance, totalCost);
     }
 
     /**
