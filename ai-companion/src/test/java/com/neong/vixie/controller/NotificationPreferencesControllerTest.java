@@ -4,6 +4,7 @@ import com.neong.vixie.dto.NotificationPreferencesRequest;
 import com.neong.vixie.dto.NotificationPreferencesResponse;
 import com.neong.vixie.model.NotificationPreferences;
 import com.neong.vixie.repository.NotificationPreferencesRepository;
+import com.neong.vixie.service.NotificationDeliveryWorker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,13 +24,14 @@ import static org.mockito.Mockito.*;
 class NotificationPreferencesControllerTest {
 
     @Mock private NotificationPreferencesRepository preferencesRepository;
+    @Mock private NotificationDeliveryWorker notificationDeliveryWorker;
     @Mock private Principal principal;
 
     private NotificationPreferencesController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new NotificationPreferencesController(preferencesRepository);
+        controller = new NotificationPreferencesController(preferencesRepository, notificationDeliveryWorker);
         when(principal.getName()).thenReturn("user_123");
     }
 

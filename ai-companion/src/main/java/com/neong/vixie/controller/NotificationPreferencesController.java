@@ -4,6 +4,7 @@ import com.neong.vixie.dto.NotificationPreferencesRequest;
 import com.neong.vixie.dto.NotificationPreferencesResponse;
 import com.neong.vixie.model.NotificationPreferences;
 import com.neong.vixie.repository.NotificationPreferencesRepository;
+import com.neong.vixie.service.NotificationDeliveryWorker;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import java.time.ZoneId;
 public class NotificationPreferencesController {
 
     private final NotificationPreferencesRepository preferencesRepository;
+    private final NotificationDeliveryWorker notificationDeliveryWorker;
 
     @GetMapping
     public ResponseEntity<NotificationPreferencesResponse> getPreferences(
@@ -68,6 +70,7 @@ public class NotificationPreferencesController {
         preferences.applyDefaults();
 
         NotificationPreferences saved = preferencesRepository.save(preferences);
+        notificationDeliveryWorker.refreshRoutines(saved);
         return ResponseEntity.ok(NotificationPreferencesResponse.from(saved));
     }
 

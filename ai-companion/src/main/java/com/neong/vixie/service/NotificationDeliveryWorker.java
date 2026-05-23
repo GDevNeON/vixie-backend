@@ -44,6 +44,23 @@ public class NotificationDeliveryWorker {
     }
 
     private void deliver(NotificationEvent event) {
+        if (isDailyRoutine(event.type())) {
+            NotificationPreferences prefs = preferencesRepository
+                    .findByUserIdAndCharacterId(event.userId(), event.characterId())
+                    .orElse(null);
+            
+            if (prefs == null || !isRoutineEnabled(prefs, event.type())) {
+                return; // Disabled, so ignore and don't requeue
+            }
+            
+            ZoneId zone = ZoneId.of(prefs.getTimezone());
+            ZonedDateTime eventTime = Instant.ofEpochSecond(event.targetTimeEpoch()).atZone(zone);
+            java.time.LocalTime expectedTime = timeFor(prefs, event.type());
+            if (expectedTime != null && (eventTime.getHour() != expectedTime.getHour() || eventTime.getMinute() != expectedTime.getMinute())) {
+                return; // Time was changed since this was queued, ignore
+            }
+        }
+
         NotificationContent content = resolveContent(event);
         List<NotificationToken> tokens =
                 notificationTokenRepository.findByUserIdAndIsActiveTrue(event.userId());
@@ -155,6 +172,15 @@ public class NotificationDeliveryWorker {
                 || NotificationEvent.SLEEP.equals(type);
     }
 
+    private boolean isRoutineEnabled(NotificationPreferences preferences, String type) {
+        return switch (type) {
+            case NotificationEvent.MORNING_GREETING -> preferences.isGreetingEnabled();
+            case NotificationEvent.FOCUS -> preferences.isFocusEnabled();
+            case NotificationEvent.SLEEP -> preferences.isSleepEnabled();
+            default -> false;
+        };
+    }
+
     private NotificationEvent nextDailyEvent(NotificationPreferences preferences, String type) {
         preferences.applyDefaults();
         ZoneId zoneId = ZoneId.of(preferences.getTimezone());
@@ -163,10 +189,14 @@ public class NotificationDeliveryWorker {
         if (routineTime == null) {
             return null;
         }
+        
         ZonedDateTime next = now.toLocalDate()
-                .plusDays(1)
                 .atTime(routineTime)
                 .atZone(zoneId);
+                
+        if (next.isBefore(now) || next.isEqual(now)) {
+            next = next.plusDays(1);
+        }
 
         return new NotificationEvent(
                 preferences.getUserId(),
@@ -175,6 +205,21 @@ public class NotificationDeliveryWorker {
                 next.toEpochSecond(),
                 null
         );
+    }
+
+    public void refreshRoutines(NotificationPreferences preferences) {
+        if (preferences.isGreetingEnabled()) {
+            NotificationEvent event = nextDailyEvent(preferences, NotificationEvent.MORNING_GREETING);
+            if (event != null) notificationDelayQueue.enqueue(event);
+        }
+        if (preferences.isFocusEnabled()) {
+            NotificationEvent event = nextDailyEvent(preferences, NotificationEvent.FOCUS);
+            if (event != null) notificationDelayQueue.enqueue(event);
+        }
+        if (preferences.isSleepEnabled()) {
+            NotificationEvent event = nextDailyEvent(preferences, NotificationEvent.SLEEP);
+            if (event != null) notificationDelayQueue.enqueue(event);
+        }
     }
 
     private java.time.LocalTime timeFor(NotificationPreferences preferences, String type) {
