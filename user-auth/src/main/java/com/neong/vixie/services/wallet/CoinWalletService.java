@@ -166,7 +166,7 @@ public class CoinWalletService {
                             .toBodilessEntity();
                     log.info("Purchase event sent to ai-companion for item {}", itemId);
                 } catch (Exception e) {
-                    log.warn("Fire-and-forget purchase event failed for item {}: {}", itemId, e.getMessage());
+                    log.error("CRITICAL ALARM: Fire-and-forget purchase event failed for item {}: {}. Manual reconciliation required!", itemId, e.getMessage());
                 }
             }
         });

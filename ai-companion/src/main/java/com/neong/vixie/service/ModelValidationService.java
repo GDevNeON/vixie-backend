@@ -44,6 +44,10 @@ public class ModelValidationService {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 String name = entry.getName();
+                if (name.contains("..")) {
+                    errors.add("Security violation: Directory traversal attempt in zip entry: " + name);
+                    return new ValidationResult(false, errors);
+                }
                 allEntries.add(name);
 
                 if (name.endsWith(".model3.json") && model3JsonContent == null) {

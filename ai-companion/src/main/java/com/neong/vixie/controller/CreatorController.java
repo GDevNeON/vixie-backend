@@ -181,6 +181,12 @@ public class CreatorController {
             while ((entry = zis.getNextEntry()) != null) {
                 if (entry.isDirectory()) continue;
                 String entryName = entry.getName();
+                
+                if (entryName.contains("..")) {
+                    log.error("Directory traversal attempt in zip entry: {}", entryName);
+                    return ResponseEntity.badRequest()
+                            .body(Map.of("error", "Invalid file path in zip archive"));
+                }
                 byte[] data = readZipEntryBytes(zis);
                 String cdnUrl = cloudinaryStorageService.upload(data, folderPath, entryName);
 
@@ -270,16 +276,18 @@ public class CreatorController {
     @PutMapping("/items/{id}")
     public ResponseEntity<MarketplaceItemDto> updateItemMetadata(
             @PathVariable String id,
-            @RequestBody Map<String, Object> updates,
+            @Valid @RequestBody com.neong.vixie.dto.UpdateItemRequest request,
             Principal principal) {
         String userId = principal.getName();
         CreatorProfile profile = creatorService.getByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Creator profile not found"));
         
-        String name = updates.containsKey("name") ? (String) updates.get("name") : null;
-        String description = updates.containsKey("description") ? (String) updates.get("description") : null;
-        Integer priceCoins = updates.containsKey("priceCoins") ? (Integer) updates.get("priceCoins") : null;
-        
-        return ResponseEntity.ok(marketplaceService.updateItemMetadata(id, profile.getId(), name, description, priceCoins));
+        return ResponseEntity.ok(marketplaceService.updateItemMetadata(
+                id, 
+                profile.getId(), 
+                request.name(), 
+                request.description(), 
+                request.priceCoins()
+        ));
     }
 }
