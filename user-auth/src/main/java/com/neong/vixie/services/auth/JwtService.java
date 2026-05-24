@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import com.neong.vixie.models.db.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -48,6 +50,9 @@ public class JwtService {
                 .toList();
         claims.put("roles", roles);
         claims.put("type", type);
+        if (userDetails instanceof User user) {
+            claims.put("user_id", user.getId());
+        }
 
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);

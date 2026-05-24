@@ -38,6 +38,16 @@ public class JwtService {
     }
 
     /**
+     * Extract the stable user id if present. Older tokens may not have this claim,
+     * so callers can fall back to the subject for backwards compatibility.
+     */
+    public String extractUserId(String token) {
+        Claims claims = extractAllClaims(token);
+        Object userId = claims.get("user_id");
+        return userId != null ? userId.toString() : claims.getSubject();
+    }
+
+    /**
      * Extract the "type" claim to distinguish access vs refresh tokens.
      */
     public String extractTokenType(String token) {

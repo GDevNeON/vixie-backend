@@ -18,7 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 /**
  * JWT authentication filter for the AI Companion service.
  * Extracts and validates Bearer tokens from the Authorization header.
- * Sets the authenticated user (email from JWT subject) in the SecurityContext.
+ * Sets the authenticated user id from JWT claims in the SecurityContext.
  * Does NOT perform database lookups — trusts the JWT claims directly.
  */
 @Slf4j
@@ -52,13 +52,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             if (jwtService.isTokenValid(jwt)) {
-                String subject = jwtService.extractSubject(jwt);
+                String userId = jwtService.extractUserId(jwt);
 
                 // Only set auth if context is empty (avoid overwriting existing auth)
                 if (SecurityContextHolder.getContext().getAuthentication() == null) {
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(
-                                    subject,           // principal = email (from JWT subject)
+                                    userId,            // principal = stable user id
                                     null,              // credentials = null (stateless)
                                     Collections.emptyList()  // no granted authorities
                             );
@@ -66,7 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             new WebAuthenticationDetailsSource().buildDetails(request)
                     );
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    log.debug("Authenticated user: {}", subject);
+                    log.debug("Authenticated user: {}", userId);
                 }
             } else {
                 log.debug("Invalid token received");

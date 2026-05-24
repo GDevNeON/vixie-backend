@@ -1,10 +1,12 @@
 package com.neong.vixie.controllers.user;
 
 import com.neong.vixie.models.db.NotificationToken;
+import com.neong.vixie.models.db.User;
 import com.neong.vixie.models.dto.NotificationTokenRequest;
 import com.neong.vixie.repositories.user.NotificationTokenRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,7 +34,7 @@ public class NotificationTokenController {
     public ResponseEntity<Void> registerToken(
             @Valid @RequestBody NotificationTokenRequest request,
             Principal principal) {
-        String userId = principal.getName();
+        String userId = resolveUserId(principal);
 
         Optional<NotificationToken> existing =
                 notificationTokenRepository.findByUserIdAndDeviceId(userId, request.deviceId());
@@ -55,5 +57,13 @@ public class NotificationTokenController {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    private String resolveUserId(Principal principal) {
+        if (principal instanceof Authentication authentication
+                && authentication.getPrincipal() instanceof User user) {
+            return user.getId();
+        }
+        return principal.getName();
     }
 }

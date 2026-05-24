@@ -76,11 +76,11 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                             String jwt = bearerToken.substring(7);
                             try {
                                 if (jwtService.isTokenValid(jwt)) {
-                                    String subject = jwtService.extractSubject(jwt);
+                                    String userId = jwtService.extractUserId(jwt);
                                     UsernamePasswordAuthenticationToken auth =
-                                            new UsernamePasswordAuthenticationToken(subject, null, Collections.emptyList());
+                                            new UsernamePasswordAuthenticationToken(userId, null, Collections.emptyList());
                                     accessor.setUser(auth);
-                                    log.debug("STOMP connection authenticated for user: {}", subject);
+                                    log.debug("STOMP connection authenticated for user: {}", userId);
                                 }
                             } catch (Exception e) {
                                 log.warn("STOMP JWT authentication failed: {}", e.getMessage());

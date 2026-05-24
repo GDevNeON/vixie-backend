@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.verify;
@@ -40,7 +41,7 @@ class JwtAuthenticationBehavioralTest {
         String token = "valid.jwt.token";
         
         when(jwtService.isTokenValid(token)).thenReturn(true);
-        when(jwtService.extractSubject(token)).thenReturn("user@example.com");
+        when(jwtService.extractUserId(token)).thenReturn("user_123");
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setParameter("token", token);
@@ -48,7 +49,9 @@ class JwtAuthenticationBehavioralTest {
 
         filter.doFilterInternal(request, response, filterChain);
 
-        assertNotNull(SecurityContextHolder.getContext().getAuthentication(), "Authentication must be set in context");
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertNotNull(authentication, "Authentication must be set in context");
+        assertEquals("user_123", authentication.getName());
         verify(filterChain).doFilter(request, response);
     }
 
