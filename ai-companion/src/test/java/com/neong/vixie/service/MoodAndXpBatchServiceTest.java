@@ -53,8 +53,9 @@ class MoodAndXpBatchServiceTest {
     void setUp() {
         // Mock transaction template to execute directly
         lenient().doAnswer(invocation -> {
-            TransactionCallback<?> callback = invocation.getArgument(0);
-            return callback.doInTransaction(null);
+            java.util.function.Consumer<org.springframework.transaction.TransactionStatus> callback = invocation.getArgument(0);
+            callback.accept(null);
+            return null;
         }).when(transactionTemplate).executeWithoutResult(any());
         
         lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
