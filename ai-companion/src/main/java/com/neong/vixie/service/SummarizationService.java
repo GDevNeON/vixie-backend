@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class SummarizationService {
 
-    private static final int SUMMARIZATION_THRESHOLD = 18;
+    private static final int SUMMARIZATION_THRESHOLD = 16;
     private static final int MESSAGES_TO_SUMMARIZE = 10;
 
     private static final String SUMMARIZATION_PROMPT =
