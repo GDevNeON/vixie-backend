@@ -136,4 +136,26 @@ class ChatControllerTest {
                 argThat(env -> env instanceof ChatResponseEnvelope cre
                         && cre.type().equals("error")));
     }
+
+    @Test
+    void handleChat_emitsTtsTriggerOnComplete() throws InterruptedException {
+        when(principal.getName()).thenReturn("user_123");
+        when(conversationRepository.getHistory("user_123", "char_default")).thenReturn(List.of());
+        when(characterPromptService.buildSystemPrompt("user_123", "char_default")).thenReturn("prompt");
+        when(geminiService.streamChat(anyString(), anyList()))
+                .thenReturn(Flux.just("AI ", "response"));
+
+        com.neong.vixie.dto.TtsTriggerPayload mockPayload = 
+                new com.neong.vixie.dto.TtsTriggerPayload("AI response");
+        when(ttsService.generateTtsPayload("AI response", "char_default"))
+                .thenReturn(mockPayload);
+
+        controller.handleChat(new ChatRequestEnvelope("char_default", "Hi"), principal);
+
+        Thread.sleep(200);
+
+        verify(messagingTemplate).convertAndSendToUser(
+                eq("user_123"), eq("/queue/tts"),
+                eq(mockPayload));
+    }
 }

@@ -81,7 +81,7 @@ class MoodAndXpBatchServiceTest {
                 .thenReturn(Optional.of(state));
 
         moodAndXpBatchService.analyzeAndApplyBatch("user_1", "char_1", List.of(
-                new ChatMessageDto("user_1", "user", "I love this!", null)
+                ChatMessageDto.of("user", "I love this!")
         ));
 
         verify(moodService).setCurrentMood("user_1", "HAPPY");
