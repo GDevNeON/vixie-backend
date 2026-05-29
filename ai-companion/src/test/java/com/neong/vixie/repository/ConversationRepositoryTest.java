@@ -1,6 +1,7 @@
 package com.neong.vixie.repository;
 
 import com.neong.vixie.model.ChatMessageDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,10 +36,13 @@ class ConversationRepositoryTest {
     private static final String CHAR_ID = "char_default";
     private static final String EXPECTED_KEY = "vixie:chat:user_123:char_default:history";
 
+    private ObjectMapper objectMapper;
+
     @BeforeEach
     void setUp() {
+        objectMapper = new ObjectMapper();
         when(redisTemplate.opsForList()).thenReturn(listOps);
-        repository = new ConversationRepository(redisTemplate);
+        repository = new ConversationRepository(redisTemplate, objectMapper);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.neong.vixie.repository;
 
 import com.neong.vixie.model.ChatMessageDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
@@ -26,6 +27,7 @@ public class ConversationRepository {
     private static final Duration TTL = Duration.ofHours(48);
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     /**
      * Build the Redis key for a user+character conversation.
@@ -56,7 +58,7 @@ public class ConversationRepository {
             return List.of();
         }
         return raw.stream()
-                .map(obj -> (ChatMessageDto) obj)
+                .map(obj -> objectMapper.convertValue(obj, ChatMessageDto.class))
                 .toList();
     }
 
